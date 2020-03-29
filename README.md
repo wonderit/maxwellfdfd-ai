@@ -18,7 +18,7 @@
     >
     >   [models_paper.zip](https://drive.google.com/uc?id=1lvexOJmZ8zGHecwOwAGBoEjxRj9YXBO4)
     >
-    >   [models_paper_mean_std.zip](https://drive.google.com/uc?id=1lvexOJmZ8zGHecwOwAGBoEjxRj9YXBO4)
+    >   [models_paper_mean_std.zip](https://drive.google.com/uc?id=13ySFQd77kpqrBS61HuaK-YA9fs8hOSJH)
 
 
 # Conda Setting
