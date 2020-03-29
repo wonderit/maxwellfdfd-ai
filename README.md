@@ -3,19 +3,22 @@
 1. Download Data
 
 * download by command (mac)
->   ```shell script
->   ./download.sh 
->   ```
+    ```shell script
+    ./download.sh 
+    ```
 
 * download by link
->   download and unzip under folder named 'data'
->   [data.zip](https://drive.google.com/uc?id=14-Bl89OzRtLM1MCW2H81Xvivq8EvTrmB)
+    >   download and unzip under folder named 'data'
+    >
+    >   [data.zip](https://drive.google.com/uc?id=14-Bl89OzRtLM1MCW2H81Xvivq8EvTrmB)
 
 2. Download trained models
 
->   download and unzip models of the paper
->   [models_paper.zip](https://drive.google.com/uc?id=1lvexOJmZ8zGHecwOwAGBoEjxRj9YXBO4)
->   [models_paper_mean_std.zip](https://drive.google.com/uc?id=1lvexOJmZ8zGHecwOwAGBoEjxRj9YXBO4)
+    >   download and unzip models of the paper
+    >
+    >   [models_paper.zip](https://drive.google.com/uc?id=1lvexOJmZ8zGHecwOwAGBoEjxRj9YXBO4)
+    >
+    >   [models_paper_mean_std.zip](https://drive.google.com/uc?id=1lvexOJmZ8zGHecwOwAGBoEjxRj9YXBO4)
 
 
 # Conda Setting
@@ -34,25 +37,25 @@ pip install -r requirements.txt
 # Run script 
 
 * Train
->   - default
->   ```shell script
->   python train.py 
->   ```
+    - default
+    ```shell script
+    python train.py 
+    ```
  
->   - different model, loss function
->   ```shell script
->   python train.py -m rf -l diff_rmse
->   ```
+    - different model, loss function
+    ```shell script
+    python train.py -m rf -l diff_rmse
+    ```
 
 
 * Test
->   ```shell script
->   python test.py 
->   python test_ensemble.py
->   ```
+    ```shell script
+    python test.py 
+    python test_ensemble.py
+    ```
 
 * Evaluate single data
 
->   ```shell script
->   python evaluate.py 
->   ```
+    ```shell script
+    python evaluate.py 
+    ```
