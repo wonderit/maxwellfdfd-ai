@@ -163,3 +163,9 @@ octave-workspace
 *.iml
 out
 gen
+
+# For data & models
+data/
+models*/
+data.zip
+models_paper*.zip
