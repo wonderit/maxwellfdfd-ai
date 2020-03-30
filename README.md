@@ -59,3 +59,6 @@ pip install -r requirements.txt
     ```shell script
     python evaluate.py 
     ```
+
+## To generate the data please visit the following GitHub URL : 
+https://github.com/wonderit/maxwellfdfd
