@@ -123,7 +123,7 @@ def create_model(model_type, model_input_shape, loss_function):
         model.add(Dense(24, activation='sigmoid'))
         model.compile(loss=loss_function, optimizer=Adam(lr=0.0005), metrics=['accuracy'])
     elif model_type.startswith('rf'):
-        regr = RandomForestRegressor(n_estimators=100, max_depth=30, random_state=2, loss_function=loss_function)
+        regr = RandomForestRegressor(n_estimators=100, max_depth=30, random_state=2)
         return regr
     elif model_type.startswith('svm'):
         regr = SVR(kernel='rbf', C=1e3, gamma=0.1)
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--shape", help="Select input image shape. (rectangle or square?)", default='rect')
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)",
                         default='rmse')
-    parser.add_argument("-e", "--epochs", help="Set epochs", default=300)
+    parser.add_argument("-e", "--epochs", help="Set epochs", default=3)
     parser.add_argument("-b", "--batch_size", help="Set batch size", default=128)
     parser.add_argument("-n", "--is_normalized", help="Set is Normalized", action='store_true')
     parser.add_argument("-d", "--data_type", help="Select data type.. (train, valid, test)",
@@ -269,13 +269,6 @@ if __name__ == '__main__':
     DATAPATH = DATAPATH_TRAIN
     DATASETS = DATASETS_TRAIN
 
-    if args.data_type.startswith('valid'):
-        DATAPATH = DATAPATH_VALID
-        DATASETS = DATASETS_VALID
-    elif args.data_type.startswith('test'):
-        DATAPATH = DATAPATH_TEST
-        DATASETS = DATASETS_TEST
-
     if input_shape_type.startswith('rect'):
         img_rows, img_cols, channels = 100, 200, 1
     else:
@@ -288,9 +281,9 @@ if __name__ == '__main__':
     x_train = []
     y_train = []
 
-    print('Data Loading....')
+    print('Data Loading... Train dataset Start.')
 
-    # load dataset
+    # load Train dataset
     for data in DATASETS:
         dataframe = pd.read_csv(os.path.join(DATAPATH, '{}.csv'.format(data)), delim_whitespace=False, header=None)
         dataset = dataframe.values
@@ -323,33 +316,83 @@ if __name__ == '__main__':
                 square_image = np.vstack([image, v_flipped_image])
                 x_train.append(square_image)
 
-    print('Data Loading... Finished.')
+    print('Data Loading... Train dataset Finished.')
+    print('Data Loading... Validation dataset Start.')
 
+    DATAPATH = DATAPATH_VALID
+    DATASETS = DATASETS_VALID
+
+    x_validation = []
+    y_validation = []
+    for data in DATASETS:
+        dataframe = pd.read_csv(os.path.join(DATAPATH, '{}.csv'.format(data)), delim_whitespace=False, header=None)
+        dataset = dataframe.values
+
+        # split into input (X) and output (Y) variables
+        fileNames = dataset[:, 0]
+        y_validation.extend(dataset[:, 1:25])
+        for idx, file in enumerate(fileNames):
+
+            try:
+                image = Image.open(os.path.join(DATAPATH, data, '{}.tiff'.format(int(file))))
+                image = np.array(image, dtype=np.uint8)
+            except (TypeError, FileNotFoundError) as te:
+                image = Image.open(os.path.join(DATAPATH, data, '{}.tiff'.format(idx + 1)))
+                try:
+                    image = np.array(image, dtype=np.uint8)
+                except:
+                    continue
+
+            if model_name.startswith('cnn') is False and model_name.startswith('nn') is False:
+                image = compress_image(image, 10)
+
+            if model_name.startswith('cnn_small'):
+                image = compress_image(image, 5)
+
+            if input_shape_type.startswith('rect'):
+                x_validation.append(image)
+            else:
+                v_flipped_image = np.flip(image, 0)
+                square_image = np.vstack([image, v_flipped_image])
+                x_validation.append(square_image)
+    print('Data Loading... Validation dataset Finished.')
     x_train = np.array(x_train)
     y_train = np.array(y_train)
     y_train = np.true_divide(y_train, 2767.1)
+
+    x_validation = np.array(x_validation)
+    y_validation = np.array(y_validation)
+    y_validation = np.true_divide(y_validation, 2767.1)
 
     if args.is_normalized:
         print('y_train mean : ', y_train.mean(), np.std(y_train))
         MEAN = 0.5052
         STD = 0.2104
         y_train = scale(y_train, MEAN, STD)
+        y_validaton = scale(y_validaton, MEAN, STD)
 
     if model_name.startswith('cnn'):
         if K.image_data_format() == 'channels_first':
             x_train = x_train.reshape(x_train.shape[0], channels, img_rows, img_cols)
             y_train = y_train.reshape(y_train.shape[0], channels, img_rows, img_cols)
+
+            x_validation = x_validation.reshape(x_validation.shape[0], channels, img_rows, img_cols)
+            y_validaton = y_validaton.reshape(y_validaton.shape[0], channels, img_rows, img_cols)
             input_shape = (channels, img_rows, img_cols)
         else:
             x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, channels)
+            x_validation = x_validation.reshape(x_validation.shape[0], img_rows, img_cols, channels)
             input_shape = (img_rows, img_cols, channels)
     else:
         if K.image_data_format() == 'channels_first':
             x_train = x_train.reshape(x_train.shape[0], channels * img_rows * img_cols)
             y_train = y_train.reshape(y_train.shape[0], channels * img_rows * img_cols)
+            x_validation = x_validation.reshape(x_validation.shape[0], channels * img_rows * img_cols)
+            y_validaton = y_validaton.reshape(y_validaton.shape[0], channels * img_rows * img_cols)
             input_shape = channels * img_rows * img_cols
         else:
             x_train = x_train.reshape(x_train.shape[0], img_rows * img_cols * channels)
+            x_validation = x_validation.reshape(x_validation.shape[0], img_rows * img_cols * channels)
             input_shape = channels * img_rows * img_cols
 
     # for DEBUG
@@ -361,7 +404,12 @@ if __name__ == '__main__':
     model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
     if model_name.startswith('cnn') or model_name.startswith('nn'):
-        history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1)
+        history = model.fit(x_train, y_train,
+                            batch_size=batch_size,
+                            epochs=epochs,
+                            # pass validtation for monitoring
+                            # validation loss and metrics
+                            validation_data=(x_validation, y_validation))
         score = model.evaluate(x_train, y_train, verbose=0)
         print('Train loss:', score[0])
         print('Train accuracy:', score[1])
@@ -369,7 +417,7 @@ if __name__ == '__main__':
 
         # serialize model to JSON
         model_json = model.to_json()
-        model_export_path_folder = 'models_paper_mean_std/{}_{}_{}'.format(model_name, batch_size, epochs)
+        model_export_path_folder = 'models/{}_{}_{}'.format(model_name, batch_size, epochs)
         if not os.path.exists(model_export_path_folder):
             os.makedirs(model_export_path_folder)
 
@@ -391,14 +439,15 @@ if __name__ == '__main__':
         plt.title('Model - Loss')
         plt.legend(['Training', 'Validation'], loc='upper right')
         plt.plot(history.history['loss'])
-        train_progress_figure_path_folder = 'result/train_progress_paper_mean_std'
+        plt.plot(history.history['val_loss'])
+        train_progress_figure_path_folder = 'result/train_progress'
         if not os.path.exists(train_progress_figure_path_folder):
             os.makedirs(train_progress_figure_path_folder)
         plt.savefig('{}/{}_{}.png'.format(train_progress_figure_path_folder, model_name, loss_functions))
     else:
         regr = model.fit(x_train, y_train)
 
-        model_export_path_folder = 'models_paper_mean_std/{}_{}_{}'.format(model_name, batch_size, epochs)
+        model_export_path_folder = 'models/{}_{}_{}'.format(model_name, batch_size, epochs)
         if not os.path.exists(model_export_path_folder):
             os.makedirs(model_export_path_folder)
 
@@ -406,3 +455,4 @@ if __name__ == '__main__':
         model_export_path = model_export_path_template.format(model_export_path_folder, loss_functions,
                                                               input_shape_type)
         joblib.dump(model, model_export_path)
+        print("Saved model to disk")
