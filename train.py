@@ -253,7 +253,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--shape", help="Select input image shape. (rectangle or square?)", default='rect')
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)",
                         default='rmse')
-    parser.add_argument("-e", "--epochs", help="Set epochs", default=3)
+    parser.add_argument("-e", "--epochs", help="Set epochs", default=300)
     parser.add_argument("-b", "--batch_size", help="Set batch size", default=128)
     parser.add_argument("-n", "--is_normalized", help="Set is Normalized", action='store_true')
     parser.add_argument("-d", "--data_type", help="Select data type.. (train, valid, test)",
