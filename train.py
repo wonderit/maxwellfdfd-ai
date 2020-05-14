@@ -78,6 +78,22 @@ class CustomLoss:
 
         return loss
 
+def tic():
+    import time
+    global startTime_for_tictoc
+    startTime_for_tictoc = time.time()
+
+def toc():
+    import time
+    if 'startTime_for_tictoc' in globals():
+        runningTime = time.time() - startTime_for_tictoc
+        toc_ = "Elapsed time is " + str(runningTime) + " seconds."
+        print(toc_)
+        return runningTime
+    else:
+        toc_ = "Toc: start time not set"
+        print(toc_)
+        return toc_
 
 def scale(arr, std, mean):
     arr -= mean
@@ -404,12 +420,14 @@ if __name__ == '__main__':
     model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
     if model_name.startswith('cnn') or model_name.startswith('nn'):
+        tic()
         history = model.fit(x_train, y_train,
                             batch_size=batch_size,
                             epochs=epochs,
                             # pass validtation for monitoring
                             # validation loss and metrics
                             validation_data=(x_validation, y_validation))
+        toc()
         score = model.evaluate(x_train, y_train, verbose=0)
         print('Train loss:', score[0])
         print('Train accuracy:', score[1])
@@ -433,13 +451,12 @@ if __name__ == '__main__':
         print("Saved model to disk")
 
         # Loss
-        fig2, ax_loss = plt.subplots()
+        plt.plot(history.history['loss'])
+        plt.plot(history.history['val_loss'])
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         plt.title('Model - Loss')
         plt.legend(['Training', 'Validation'], loc='upper right')
-        plt.plot(history.history['loss'])
-        plt.plot(history.history['val_loss'])
         train_progress_figure_path_folder = 'result/train_progress'
         if not os.path.exists(train_progress_figure_path_folder):
             os.makedirs(train_progress_figure_path_folder)

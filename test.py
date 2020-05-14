@@ -221,7 +221,7 @@ colors=[
     'green', 'skyblue', 'red',
 ]
 
-model_folder_path = 'models_paper'
+model_folder_path = 'models'
 is_mean_std = False
 
 if MODEL_SHAPE_TYPE == 'rect':
