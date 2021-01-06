@@ -30,7 +30,29 @@ bash Anaconda3-2019.10-Linux-x86_64.sh
 
 conda create -n maxwellfdfd-ai python=3.7
 conda activate maxwellfdfd-ai
-pip install -r requirements.txt
+
+# pip install -r requirements.txt
+# download manually 
+pip install C:\{pip-dependency}\Keras-2.3.1-py2.py3-none-any.whl --no-deps
+pip install C:\{pip-dependency}\tensorflow-2.0.1-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\protobuf-3.11.0-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\absl-py-0.8.1.tar.gz --no-deps
+pip install c:\{pip-dependency}\wrapt-1.11.2.tar.gz --no-deps
+pip install c:\{pip-dependency}\gast-0.2.2.tar.gz --no-deps
+pip install c:\{pip-dependency}\astor-0.8.0-py2.py3-none-any.whl --no-deps
+pip install c:\{pip-dependency}\termcolor-1.1.0.tar.gz --no-deps
+pip install c:\{pip-dependency}\keras_applications-1.0.8-py3-none-any.whl --no-deps
+pip install c:\{pip-dependency}\keras_preprocessing-1.1.0-py2.py3-none-any.whl --no-deps
+pip install c:\{pip-dependency}\PyYAML-5.2-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\scipy-1.3.3-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\matplotlib-3.1.2-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\pyparsing-2.4.5-py2.py3-none-any.whl --no-deps
+pip install c:\{pip-dependency}\cycler-0.10.0-py2.py3-none-any.whl --no-deps
+pip install c:\{pip-dependency}\kiwisolver-1.1.0-cp37-none-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\Pillow-6.2.2-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\scikit_learn-0.21.3-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\joblib-0.14.0-py2.py3-none-any.whl --no-deps
+
 ```
 
  
