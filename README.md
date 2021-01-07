@@ -87,3 +87,5 @@ https://github.com/wonderit/maxwellfdfd
 
 ## How to Cite
 Kim, W., Seok, J. Simulation acceleration for transmittance of electromagnetic waves in 2D slit arrays using deep learning. Sci Rep 10, 10535 (2020). https://doi.org/10.1038/s41598-020-67545-x
+
+test
