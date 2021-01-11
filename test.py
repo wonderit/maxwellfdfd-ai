@@ -211,17 +211,17 @@ model_names = [
 #     'cnn_4l16_d0.4_noBN_type2_128_300/rmse_rect_1',
 # ]
 #
-# model_name_details = [
-#     'cnn_4l16_d0.4_noBN_128_300/rmse_rect_1',
-#     'cnn_4l16_d0.4_noBN_128_300/rmse,diff_bce_rect_1',
-#     'cnn_4l16_d0.4_noBN_128_300/rmse,diff_rmse_rect_1',
-# ]
-
 model_name_details = [
-    'cnn_128_300/rmse_rect_1',
-    'cnn_128_300/rmse_rect_1',
-    'cnn_128_300/rmse_rect_1',
+    'cnn_4l16_d0.4_noBN_128_300/rmse_rect_1',
+    'cnn_4l16_d0.4_noBN_128_300/rmse,diff_bce_rect_1',
+    'cnn_4l16_d0.4_noBN_128_300/rmse,diff_rmse_rect_1',
 ]
+#
+# model_name_details = [
+#     'cnn_128_300/rmse_rect_1',
+#     'cnn_128_300/rmse_rect_1',
+#     'cnn_128_300/rmse_rect_1',
+# ]
 
 colors=[
     'green', 'skyblue', 'red',
