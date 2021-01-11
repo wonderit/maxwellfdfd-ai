@@ -3,6 +3,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Activation
 from keras.optimizers import Adam
+import keras
 import matplotlib.pyplot as plt
 from keras import backend as K
 import tensorflow as tf
@@ -137,7 +138,7 @@ def create_model(model_type, model_input_shape, loss_function):
         model.add(Dense(1024, activation='relu'))
         model.add(Dropout(0.4))
         model.add(Dense(24, activation='sigmoid'))
-        model.compile(loss=loss_function, optimizer=Adam(lr=0.0005), metrics=['accuracy'])
+        model.compile(loss=loss_function, optimizer=Adam(lr=args.learning_rate), metrics=['accuracy'])
     elif model_type.startswith('rf'):
         regr = RandomForestRegressor(n_estimators=100, max_depth=30, random_state=2)
         return regr
@@ -282,6 +283,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--shape", help="Select input image shape. (rectangle or square?)", default='rect')
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)",
                         default='rmse')
+    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", default=0.001)
     parser.add_argument("-e", "--epochs", help="Set epochs", default=300)
     parser.add_argument("-b", "--batch_size", help="Set batch size", default=128)
     parser.add_argument("-n", "--is_normalized", help="Set is Normalized", action='store_true')
@@ -432,6 +434,16 @@ if __name__ == '__main__':
     custom_loss = CustomLoss(loss_functions)
     model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
+    # add reduce_lr, earlystopping
+    stopping = keras.callbacks.EarlyStopping(patience=8)
+
+    reduce_lr = keras.callbacks.ReduceLROnPlateau(
+        factor=0.1,
+        patience=2,
+        min_lr=args.learning_rate * 0.001)
+
+    print('Training Start : Lr={}'.format(args.learning_rate))
+
     if model_name.startswith('cnn') or model_name.startswith('nn'):
         tic()
         history = model.fit(x_train, y_train,
@@ -439,7 +451,8 @@ if __name__ == '__main__':
                             epochs=epochs,
                             # pass validtation for monitoring
                             # validation loss and metrics
-                            validation_data=(x_validation, y_validation))
+                            validation_data=(x_validation, y_validation),
+                            callbacks=[reduce_lr, stopping])
         toc()
         score = model.evaluate(x_train, y_train, verbose=0)
         print('Train loss:', score[0])
