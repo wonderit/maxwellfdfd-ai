@@ -53,6 +53,19 @@ pip install c:\{pip-dependency}\Pillow-6.2.2-cp37-cp37m-win_amd64.whl --no-deps
 pip install c:\{pip-dependency}\scikit_learn-0.21.3-cp37-cp37m-win_amd64.whl --no-deps
 pip install c:\{pip-dependency}\joblib-0.14.0-py2.py3-none-any.whl --no-deps
 
+
+# download manually (linux)
+pip install --no-deps pip-dependency/tensorflow_gpu-2.3.0-cp37-cp37m-manylinux2010_x86_64.whl
+pip install --no-deps pip-dependency/protobuf-3.11.0-cp37-cp37m-manylinux2010_x86_64.whl
+
+pip install c:\{pip-dependency}\PyYAML-5.2-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\scipy-1.3.3-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\matplotlib-3.1.2-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\kiwisolver-1.1.0-cp37-none-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\Pillow-6.2.2-cp37-cp37m-win_amd64.whl --no-deps
+pip install c:\{pip-dependency}\scikit_learn-0.21.3-cp37-cp37m-win_amd64.whl --no-deps
+pandas-1.2.0-cp37-cp37m-manylinux1_x86_64.whl 
+
 ```
 
  

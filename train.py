@@ -187,6 +187,19 @@ def create_model(model_type, model_input_shape, loss_function):
     return model
 
 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+  try:
+    # Currently, memory growth needs to be the same across GPUs
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+    logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+  except RuntimeError as e:
+    # Memory growth must be set before GPUs have been initialized
+    print(e)
+
+
 ## TRAIN
 DATAPATH_TRAIN = os.path.join('data', 'train')
 DATASETS_TRAIN = [
