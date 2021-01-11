@@ -448,7 +448,7 @@ if __name__ == '__main__':
 
         # serialize model to JSON
         model_json = model.to_json()
-        model_export_path_folder = 'models/{}_{}_{}'.format(model_name, batch_size, epochs)
+        model_export_path_folder = 'models_samsung/{}_{}_{}'.format(model_name, batch_size, epochs)
         if not os.path.exists(model_export_path_folder):
             os.makedirs(model_export_path_folder)
 
@@ -470,14 +470,14 @@ if __name__ == '__main__':
         plt.ylabel('Loss')
         plt.title('Model - Loss')
         plt.legend(['Training', 'Validation'], loc='upper right')
-        train_progress_figure_path_folder = 'result/train_progress'
+        train_progress_figure_path_folder = 'result_samsung/train_progress'
         if not os.path.exists(train_progress_figure_path_folder):
             os.makedirs(train_progress_figure_path_folder)
         plt.savefig('{}/{}_{}.png'.format(train_progress_figure_path_folder, model_name, loss_functions))
     else:
         regr = model.fit(x_train, y_train)
 
-        model_export_path_folder = 'models/{}_{}_{}'.format(model_name, batch_size, epochs)
+        model_export_path_folder = 'models_samsung/{}_{}_{}'.format(model_name, batch_size, epochs)
         if not os.path.exists(model_export_path_folder):
             os.makedirs(model_export_path_folder)
 
