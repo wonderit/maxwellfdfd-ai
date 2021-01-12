@@ -66,7 +66,7 @@ class CustomLoss:
             loss = loss + losses.binary_crossentropy(y_true_diff, y_pred_diff)
 
         if 'diff_bce' in self.loss_function_array:
-            loss = loss + losses.binary_crossentropy(y_true_diff_binary, y_pred_diff_binary)
+            loss = loss + 0.1 * losses.binary_crossentropy(y_true_diff_binary, y_pred_diff_binary)
 
         if 'diff_rmse_minmax' in self.loss_function_array:
             loss = loss + K.sqrt(K.mean(K.square(y_pred_minmax - y_true_minmax)))
