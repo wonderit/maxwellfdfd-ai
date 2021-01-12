@@ -439,3 +439,11 @@ if __name__ == '__main__':
     with open('{}/rmse.csv'.format(model_export_path_folder), 'w') as csvfile:
         for key in result_rmse.keys():
             csvfile.write("%s,%s\n" % (key, result_rmse[key]))
+
+    with open('{}/rmse-local.csv'.format(model_export_path_folder), 'w') as csvfile:
+        for key in result_rmse2.keys():
+            csvfile.write("%s,%s\n" % (key, result_rmse2[key]))
+
+    with open('{}/r2-locaal.csv'.format(model_export_path_folder), 'w') as csvfile:
+        for key in result_r2_local_minmax.keys():
+            csvfile.write("%s,%s\n" % (key, result_r2_local_minmax[key]))
