@@ -183,7 +183,7 @@ def create_model(model_type, model_input_shape, loss_function):
         model.add(Dense(512, activation='relu', input_dim=model_input_shape))
         model.add(Dense(512, activation='relu'))
         model.add(Dense(24, activation='sigmoid'))
-        model.compile(loss=loss_function, optimizer='adam', metrics=['accuracy'])
+        model.compile(loss=loss_function, optimizer=Adam(lr=args.learning_rate), metrics=['accuracy'])
 
     return model
 
@@ -291,6 +291,7 @@ if __name__ == '__main__':
     # arg for AL
     parser.add_argument("-it", "--iteration", help="Set iteration for training", type=int,  default=1)
     parser.add_argument("-a", "--is_active_learning", help="Set is Active Learning", action='store_true')
+    parser.add_argument("-ar", "--is_active_random", help="Set is Active random result", action='store_true')
     parser.add_argument("-r", "--labeled_ratio", help="Set R", type=float, default=0.2)
     parser.add_argument("-t", "--top_ratio", help="Set T", type=float, default=0.1)
 
@@ -443,6 +444,19 @@ if __name__ == '__main__':
             x_validation = x_validation.reshape(x_validation.shape[0], img_rows * img_cols * channels)
             input_shape = channels * img_rows * img_cols
 
+    if args.is_active_learning:
+        import random
+        n_row = int(x_train.shape[0])
+        random_n_row = int(n_row*args.labeled_ratio)
+
+        if args.is_active_random:
+            random_n_row = random_n_row * 2
+
+        random_row = random.sample(list(range(n_row)), random_n_row)
+
+        x_train = x_train[random_row]
+        y_train = y_train[random_row]
+
     # for DEBUG
     if args.debug:
         print('x shape:', x_train.shape)
@@ -554,12 +568,13 @@ if __name__ == '__main__':
         else:
             regr = model.fit(x_train, y_train)
 
+
             model_export_path_folder = 'models_al/{}_{}_{}'.format(model_name, batch_size, epochs)
             if not os.path.exists(model_export_path_folder):
                 os.makedirs(model_export_path_folder)
 
-            model_export_path_template = '{}/{}_{}_1.joblib'
+            model_export_path_template = '{}/{}_{}_{}.joblib'
             model_export_path = model_export_path_template.format(model_export_path_folder, loss_functions,
-                                                                  input_shape_type)
+                                                                  input_shape_type, (i+1))
             joblib.dump(model, model_export_path)
             print("Saved model to disk")
