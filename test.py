@@ -4,25 +4,35 @@ import pandas as pd
 from keras import backend as K
 from keras import losses
 from keras.layers import Average
-from keras.models import Model
-from keras.models import model_from_json
+from keras.models import Model, load_model
 from sklearn.externals import joblib
 from sklearn.metrics import mean_squared_error, r2_score
 from scipy.signal import find_peaks
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+import glob
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
-class CustomLoss():
-    def __init__(self, loss_functions):
+class CustomLoss:
+    def __init__(self, _loss_function):
         super(CustomLoss, self).__init__()
-        self.loss_function_array = loss_functions.split(',')
-        print(self.loss_function_array)
+        self.loss_function_array = _loss_function.split(',')
 
     def tf_diff_axis_1(self, a):
         return a[:, 1:] - a[:, :-1]
+
+    def tf_minmax_axis_1(self, a):
+        b = self.tf_diff_axis_1(a)
+        sign = K.sign(b)
+        abs_sign = tf.abs(self.tf_diff_axis_1(sign))
+        mask_array = K.greater(abs_sign, 0)
+
+        result = tf.where(mask_array, a[:, 1:-1], tf.zeros_like(a[:, 1:-1]))
+
+        return result
 
     def custom_loss(self, y_true, y_pred):
         loss = 0
@@ -31,6 +41,15 @@ class CustomLoss():
         threshold_value = 0
         y_true_diff_binary = K.cast(K.greater(y_true_diff, threshold_value), K.floatx())
         y_pred_diff_binary = K.cast(K.greater(y_pred_diff, threshold_value), K.floatx())
+        y_true_minmax = self.tf_minmax_axis_1(y_true)
+        y_pred_minmax = self.tf_minmax_axis_1(y_pred)
+
+        if 'mse' in self.loss_function_array:
+            loss = loss + K.mean(K.square(y_pred - y_true))
+
+        if 'diff_mse' in self.loss_function_array:
+            loss = loss + K.mean(K.square(y_pred_diff - y_true_diff))
+
         if 'rmse' in self.loss_function_array:
             loss = loss + K.sqrt(K.mean(K.square(y_pred - y_true)))
 
@@ -42,6 +61,15 @@ class CustomLoss():
 
         if 'diff_bce' in self.loss_function_array:
             loss = loss + losses.binary_crossentropy(y_true_diff_binary, y_pred_diff_binary)
+
+        if 'diff_rmse_minmax' in self.loss_function_array:
+            loss = loss + K.sqrt(K.mean(K.square(y_pred_minmax - y_true_minmax)))
+
+        if 'diff_poly' in self.loss_function_array:
+            x = np.arange(24)
+            loss = loss + np.sum(
+                (np.polyval(np.polyfit(x, y_pred, 3)) - np.polyval(np.polyfit(x, y_true, 3))) ** 2
+            )
 
         return loss
 
@@ -122,55 +150,10 @@ def rescale(arr, std, mean):
 
     return arr
 
+
+
 # PARAMETERS
 MODEL_SHAPE_TYPE = 'rect'
-## TRAIN
-# DATAPATH = os.path.join('data', 'train')
-# DATASETS = [
-#     'binary_501',
-#     'binary_502',
-#     'binary_503',
-#     'binary_504',
-#     'binary_505',
-#     'binary_506',
-#     'binary_507',
-#     'binary_508',
-#     'binary_509',
-#     'binary_510',
-#     'binary_511',
-#     'binary_512',
-#     'binary_1001',
-#     'binary_1002',
-#     'binary_1003',
-#     'binary_rl_fix_501',
-#     'binary_rl_fix_502',
-#     'binary_rl_fix_503',
-#     'binary_rl_fix_504',
-#     'binary_rl_fix_505',
-#     'binary_rl_fix_506',
-#     'binary_rl_fix_507',
-#     'binary_rl_fix_508',
-#     'binary_rl_fix_509',
-#     'binary_rl_fix_510',
-#     'binary_rl_fix_511',
-#     'binary_rl_fix_512',
-#     'binary_rl_fix_513',
-#     'binary_rl_fix_514',
-#     'binary_rl_fix_515',
-#     'binary_rl_fix_516',
-#     'binary_rl_fix_517',
-#     'binary_rl_fix_518',
-#     'binary_rl_fix_519',
-#     'binary_rl_fix_520',
-#     'binary_rl_fix_1001',
-#     'binary_rl_fix_1002',
-#     'binary_rl_fix_1003',
-#     'binary_rl_fix_1004',
-#     'binary_rl_fix_1005',
-#     'binary_rl_fix_1006',
-#     'binary_rl_fix_1007',
-#     'binary_rl_fix_1008',
-# ]
 
 ## TEST
 DATAPATH = os.path.join('data', 'test')
@@ -185,55 +168,8 @@ DATASETS = [
     'binary_rl_fix_test_1005',
     'binary_test_1101',
 ]
-#
-# ## VALIDATION
-# DATAPATH = os.path.join('data', 'valid')
-# DATASETS = [
-#     'binary_1004',
-#     'binary_test_1001',
-#     'binary_test_1002',
-#     'binary_rl_fix_1009',
-#     'binary_rl_fix_1010',
-#     'binary_rl_fix_1011',
-#     'binary_rl_fix_1012',
-#     'binary_rl_fix_1013',
-#     'binary_rl_fix_test_1001',
-# ]
 
-model_names = [
-    'RMSE',
-    'RMSE + diff.RMSE',
-    'RMSE + diff.BCE'
-]
-# model_name_details = [
-#     'cnn_4l16_d0.4_noBN_128_300/rmse_rect_1',
-#     'cnn_4l16_d0.4_noBN_type1_128_300/rmse_rect_1',
-#     'cnn_4l16_d0.4_noBN_type2_128_300/rmse_rect_1',
-# ]
-#
-# model_name_details = [
-#     'cnn_4l16_d0.4_noBN_128_300/rmse_rect_1',
-#     'cnn_4l16_d0.4_noBN_128_300/rmse,diff_bce_rect_1',
-#     'cnn_4l16_d0.4_noBN_128_300/rmse,diff_rmse_rect_1',
-# ]
-
-model_name_details = [
-    'cnn_4l16_d0.4_noBN_128_300/rmse_rect_1',
-    'cnn_4l16_d0.4_noBN_128_300/rmse_rect_1',
-    'cnn_reducelr_earlystopping_128_300/rmse_rect_1',
-]
-#
-# model_name_details = [
-#     'cnn_128_300/rmse_rect_1',
-#     'cnn_128_300/rmse_rect_1',
-#     'cnn_128_300/rmse_rect_1',
-# ]
-
-colors=[
-    'green', 'skyblue', 'red',
-]
-
-model_folder_path = 'models_samsung'
+model_folder_path = 'models_al'
 is_mean_std = False
 
 if MODEL_SHAPE_TYPE == 'rect':
@@ -254,6 +190,7 @@ lowset_local_RMSE_id = 0
 
 lowest_POLY_RMSE = 999
 lowest_POLY_RMSE_ID = 0
+
 model_name = './'
 
 x_test = []
@@ -353,96 +290,152 @@ rmse_local_for_boxplot = dict()
 
 
 result_list = []
-for i, model_name_detail in enumerate(model_name_details):
-    print(model_name_detail)
-    parsed_model_name = model_name_detail.split('/')[0]
-    runningTime = 0
-    if model_name_detail.startswith('cnn') or model_name_detail.startswith('nn'):
-        parsed_model_name = model_name_detail.split('/')[0] + '_' + model_name_detail.split('/')[1]
-        MODEL_JSON_PATH = '{}/{}.json'.format(model_folder_path, model_name_detail)
-        MODEL_H5_PATH = '{}/{}.h5'.format(model_folder_path, model_name_detail)
-        # load json and create model
-        json_file = open(MODEL_JSON_PATH, 'r')
-        loaded_model_json = json_file.read()
-        json_file.close()
-        loaded_model = model_from_json(loaded_model_json)
-        # load weights into new model
-        loaded_model.load_weights(MODEL_H5_PATH)
-        print("Loaded model from disk")
 
-        if model_name_detail.startswith('cnn'):
-            tic()
-            y_predict = loaded_model.predict(x_test)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-m", "--model", help="Select model type.", default="cnn")
+    parser.add_argument("-s", "--shape", help="Select input image shape. (rectangle or square?)", default='rect')
+    parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)",
+                        default='rmse')
+    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
+    parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=100)
+    parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
+    parser.add_argument("-n", "--is_normalized", help="Set is Normalized", action='store_true')
+
+    # arg for AL
+    parser.add_argument("-it", "--iteration", help="Set iteration for training", type=int,  default=1)
+    parser.add_argument("-a", "--is_active_learning", help="Set is Active Learning", action='store_true')
+    parser.add_argument("-r", "--labeled_ratio", help="Set R", type=float, default=0.2)
+    parser.add_argument("-t", "--top_ratio", help="Set T", type=float, default=0.1)
+
+    # arg for testing parameters
+    parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
+    parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
+
+
+    args = parser.parse_args()
+
+    # Set model, result folder
+    model_folder_path = 'models_al'
+
+    model_folder_name = '{}_bs{}_e{}_lr{}'.format(
+        args.model, args.batch_size, args.max_epoch, args.learning_rate
+    )
+
+    if args.is_active_learning:
+        model_folder_name = 'al_r{}_t{}_{}_bs{}_e{}_lr{}'.format(
+            args.labeled_ratio, args.top_ratio,args.model, args.batch_size, args.max_epoch, args.learning_rate
+        )
+
+    result_folder_path = 'result_al'
+    model_export_path_folder = '{}/scatter_alpha/{}'.format(result_folder_path, model_folder_name)
+
+    if not os.path.exists(model_export_path_folder):
+        os.makedirs(model_export_path_folder)
+
+    folder_path_template = '{}/{}/*.h5'
+    search_template = folder_path_template.format(model_folder_path, model_folder_name)
+    files = glob.glob(search_template)
+    print('model file paths', files)
+
+    for i, model_file_path in enumerate(files):
+        model_file_folder, model_file_name = os.path.split(model_file_path)
+        _, parsed_model_name = os.path.split(model_file_folder)
+
+        runningTime = 0
+        if parsed_model_name.startswith('cnn') or parsed_model_name.startswith('nn'):
+            # parsed_model_name = '{}_{}'.format(parsed_model_name, model_file_name)
+            # parsed_model_name = model_file_name
+
+            loss_function = CustomLoss(args.loss_function)
+            loaded_model = load_model(model_file_path, compile=False)
+            # loaded_model.compile(loss=loss_function)
+            print("Loaded model({}) from disk".format(parsed_model_name))
+
+            if parsed_model_name.startswith('cnn'):
+                tic()
+                y_predict = loaded_model.predict(x_test)
+            else:
+                x_test_nn = x_test.reshape(x_test.shape[0], img_rows * img_cols * channels)
+                tic()
+                y_predict = loaded_model.predict(x_test_nn)
+            runningTime = toc()
+
         else:
-            x_test_nn = x_test.reshape(x_test.shape[0], img_rows * img_cols * channels)
+            MODEL_PATH = '{}/{}/{}.joblib'.format(model_folder_path, model_name, model_name_detail)
+            loaded_model = joblib.load(MODEL_PATH)
             tic()
-            y_predict = loaded_model.predict(x_test_nn)
-        runningTime = toc()
+            y_predict = loaded_model.predict(x_test_compressed)
+            runningTime = toc()
+            # corr = np.corrcoef(y_test_compressed, y_predict)[0, 1]
+            # rmse = root_mean_squared_error(y_test_compressed, y_predict)
 
-    else:
-        MODEL_PATH = '{}/{}/{}.joblib'.format(model_folder_path, model_name, model_name_detail)
-        loaded_model = joblib.load(MODEL_PATH)
-        tic()
-        y_predict = loaded_model.predict(x_test_compressed)
-        runningTime = toc()
-        # corr = np.corrcoef(y_test_compressed, y_predict)[0, 1]
-        # rmse = root_mean_squared_error(y_test_compressed, y_predict)
-
-    if is_mean_std == True:
-        MEAN = 0.5052
-        STD = 0.2104
-        y_predict = rescale(y_predict, MEAN, STD)
+        if is_mean_std == True:
+            MEAN = 0.5052
+            STD = 0.2104
+            y_predict = rescale(y_predict, MEAN, STD)
 
 
-    # corr = np.corrcoef(y_test, y_predict)[0, 1]
-    r2 = r2_score(y_test, y_predict)
+        # corr = np.corrcoef(y_test, y_predict)[0, 1]
+        r2 = r2_score(y_test, y_predict)
 
-    meanSquaredError = mean_squared_error(y_test, y_predict)
-    rmse = sqrt(meanSquaredError)
+        meanSquaredError = mean_squared_error(y_test, y_predict)
+        rmse = sqrt(meanSquaredError)
 
-    rmse_all = []
-    count = 0
+        rmse_all = []
+        count = 0
 
-    message = 'r2:{0:.4f}, RMSE:{1:.4f}'.format(r2, rmse)
+        message = 'r2:{0:.4f}, RMSE:{1:.4f}'.format(r2, rmse)
 
-    rmse_for_boxplot[parsed_model_name] = rmse_all
-    y_test_for_local_minmax = y_test[mask_array]
-    y_predict_for_local_minmax = y_predict[mask_array]
+        parsed_model_name = model_file_name
+        rmse_for_boxplot[parsed_model_name] = rmse_all
+        y_test_for_local_minmax = y_test[mask_array]
+        y_predict_for_local_minmax = y_predict[mask_array]
 
-    y_test_for_local_minmax_inverse = y_test[~mask_array]
-    y_predict_for_local_minmax_inverse = y_predict[~mask_array]
+        y_test_for_local_minmax_inverse = y_test[~mask_array]
+        y_predict_for_local_minmax_inverse = y_predict[~mask_array]
 
-    rmse2 = sqrt(mean_squared_error(y_test_for_local_minmax, y_predict_for_local_minmax))
-    r2_local_minmax = r2_score(y_test_for_local_minmax, y_predict_for_local_minmax)
-    result_rmse2[parsed_model_name] = rmse2
-    result_r2[parsed_model_name] = r2
-    result_r2_local_minmax[parsed_model_name] = r2_local_minmax
-    result_rmse[parsed_model_name] = rmse
-    result_runningTime[parsed_model_name] = runningTime
+        rmse2 = sqrt(mean_squared_error(y_test_for_local_minmax, y_predict_for_local_minmax))
+        r2_local_minmax = r2_score(y_test_for_local_minmax, y_predict_for_local_minmax)
+        result_rmse2[parsed_model_name] = rmse2
+        result_r2[parsed_model_name] = r2
+        result_r2_local_minmax[parsed_model_name] = r2_local_minmax
+        result_rmse[parsed_model_name] = rmse
+        result_runningTime[parsed_model_name] = runningTime
 
-    y_test_diff = tf_diff_axis_1(y_test)
-    y_predict_diff = tf_diff_axis_1(y_predict)
-    mse_diff = mean_squared_error(y_test_diff, y_predict_diff)
-    rmse_diff = sqrt(mse_diff)
-    result_diff_rmse[parsed_model_name] = rmse_diff
+        y_test_diff = tf_diff_axis_1(y_test)
+        y_predict_diff = tf_diff_axis_1(y_predict)
+        mse_diff = mean_squared_error(y_test_diff, y_predict_diff)
+        rmse_diff = sqrt(mse_diff)
+        result_diff_rmse[parsed_model_name] = rmse_diff
 
-    result_rmse_add_diff_rmse[parsed_model_name] = rmse_diff + rmse
+        result_rmse_add_diff_rmse[parsed_model_name] = rmse_diff + rmse
 
-    plt.scatter(y_predict_for_local_minmax_inverse, y_test_for_local_minmax_inverse, s=3, alpha=0.3, label='all', marker='+')
-    plt.scatter(y_predict_for_local_minmax, y_test_for_local_minmax, s=2, alpha=0.3, label='local_minmax', marker='.')
-    # x_margin = -0.05
-    x_margin = 0
-    plt.text(x_margin, 1, 'R² = %0.4f' % r2)
-    plt.text(x_margin, 0.95, 'RMSE = %0.4f' % rmse)
-    plt.text(x_margin, 0.9, 'local minmax R² = %0.4f' % r2_local_minmax)
-    plt.text(x_margin, 0.85, 'local minmax RMSE = %0.4f' % rmse2)
-    plt.xlabel('Predictions')
-    plt.ylabel('Actual')
-    plt.savefig("{}/scatter_alpha/{}_all.png".format('result', parsed_model_name))
-    plt.clf()
+        plt.scatter(y_predict_for_local_minmax_inverse, y_test_for_local_minmax_inverse, s=3, alpha=0.3, label='all', marker='+')
+        plt.scatter(y_predict_for_local_minmax, y_test_for_local_minmax, s=2, alpha=0.3, label='local_minmax', marker='.')
+        # x_margin = -0.05
+        x_margin = 0
+        plt.text(x_margin, 1, 'R² = %0.4f' % r2)
+        plt.text(x_margin, 0.95, 'RMSE = %0.4f' % rmse)
+        plt.text(x_margin, 0.9, 'local minmax R² = %0.4f' % r2_local_minmax)
+        plt.text(x_margin, 0.85, 'local minmax RMSE = %0.4f' % rmse2)
+        plt.xlabel('Predictions')
+        plt.ylabel('Actual')
+        plt.savefig("{}/{}.png".format(model_export_path_folder, parsed_model_name))
+        plt.clf()
 
-print('running time:', result_runningTime)
-print('rmse: ', result_rmse)
-print('rmse local minmax: ', result_rmse2)
-print('r2: ', result_r2)
-print('r2-local: ', result_r2_local_minmax)
+    print('running time:', result_runningTime)
+    print('rmse: ', result_rmse)
+    print('rmse local minmax: ', result_rmse2)
+    print('r2: ', result_r2)
+    print('r2-local: ', result_r2_local_minmax)
+
+    import csv
+    with open('{}/r2.csv'.format(model_export_path_folder), 'w') as csvfile:
+        for key in result_r2.keys():
+            csvfile.write("%s,%s\n" % (key, result_r2[key]))
+
+    with open('{}/rmse.csv'.format(model_export_path_folder), 'w') as csvfile:
+        for key in result_rmse.keys():
+            csvfile.write("%s,%s\n" % (key, result_rmse[key]))
