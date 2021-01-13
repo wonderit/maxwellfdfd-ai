@@ -567,32 +567,35 @@ if __name__ == '__main__':
                 joblib.dump(model, model_export_path)
                 print("Saved model to disk")
 
-            predict_from_model = model.predict(U_x)
-            X_pr.append(predict_from_model)
+            if not args.is_active_random:
+                predict_from_model = model.predict(U_x)
+                X_pr.append(predict_from_model)
 
-        X_pr = np.array(X_pr)
+        if not args.is_active_random:
+            X_pr = np.array(X_pr)
 
-        # Ascending order Sorted
-        rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
-        rpo_array_sum = np.sum(rpo_array, axis=1)
-        rpo_array_arg_sort = np.argsort(rpo_array_sum)
-        rpo_array_sort = np.sort(rpo_array_sum)
+            # Ascending order Sorted
+            rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
+            rpo_array_sum = np.sum(rpo_array, axis=1)
+            rpo_array_arg_sort = np.argsort(rpo_array_sum)
+            rpo_array_sort = np.sort(rpo_array_sum)
 
-        T_indices = int(len(D_x) * args.labeled_ratio * args.top_ratio)
-        U_length = len(rpo_array_arg_sort) - T_indices
-        print('t', T_indices, 'U_length', U_length)
-        U_indices = rpo_array_arg_sort[:U_length]
-        L_indices = rpo_array_arg_sort[U_length:]
+            # add labeled to L_iter
+            T_indices = int(len(D_x) * args.labeled_ratio * args.top_ratio)
+            U_length = len(rpo_array_arg_sort) - T_indices
+            U_indices = rpo_array_arg_sort[:U_length]
+            L_indices = rpo_array_arg_sort[U_length:]
 
-        L_x = np.append(L_x, U_x[L_indices], axis=0)
-        L_y = np.append(L_y, U_y[L_indices], axis=0)
+            L_x = np.append(L_x, U_x[L_indices], axis=0)
+            L_y = np.append(L_y, U_y[L_indices], axis=0)
 
+            U_x = U_x[U_indices]
+            U_y = U_y[U_indices]
+    
         # shuffle Labeled data
         shuffle_index = np.random.permutation(len(L_x))
         L_x = L_x[shuffle_index]
         L_y = L_y[shuffle_index]
 
-        U_x = U_x[U_indices]
-        U_y = U_y[U_indices]
 
 
