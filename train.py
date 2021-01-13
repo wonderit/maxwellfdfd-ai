@@ -286,10 +286,10 @@ if __name__ == '__main__':
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=100)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
-    parser.add_argument("-n", "--is_normalized", help="Set is Normalized", action='store_true')
 
     # arg for AL
     parser.add_argument("-it", "--iteration", help="Set iteration for training", type=int,  default=1)
+    parser.add_argument("-n", "--num_models", help="Set number of models for evaluation", type=int, default=3)
     parser.add_argument("-a", "--is_active_learning", help="Set is Active Learning", action='store_true')
     parser.add_argument("-ar", "--is_active_random", help="Set is Active random result", action='store_true')
     parser.add_argument("-r", "--labeled_ratio", help="Set R", type=float, default=0.2)
@@ -301,6 +301,13 @@ if __name__ == '__main__':
 
 
     args = parser.parse_args()
+
+    # for testing
+    args.unit_test = True
+    args.debug = True
+    args.is_active_learning = True
+    args.max_epoch = 3
+
     model_name = args.model
     batch_size = int(args.batch_size)
     epochs = int(args.max_epoch)
@@ -413,13 +420,6 @@ if __name__ == '__main__':
     y_validation = np.array(y_validation)
     y_validation = np.true_divide(y_validation, 2767.1)
 
-    if args.is_normalized:
-        print('y_train mean : ', y_train.mean(), np.std(y_train))
-        MEAN = 0.5052
-        STD = 0.2104
-        y_train = scale(y_train, MEAN, STD)
-        y_validaton = scale(y_validaton, MEAN, STD)
-
     if model_name.startswith('cnn'):
         if K.image_data_format() == 'channels_first':
             x_train = x_train.reshape(x_train.shape[0], channels, img_rows, img_cols)
@@ -444,27 +444,36 @@ if __name__ == '__main__':
             x_validation = x_validation.reshape(x_validation.shape[0], img_rows * img_cols * channels)
             input_shape = channels * img_rows * img_cols
 
+    D_x = x_train
+    D_y = y_train
+    L_x, L_y, U_x, U_y = None, None, None, None
+
     if args.is_active_learning:
-        import random
+        # import random
         n_row = int(x_train.shape[0])
-        random_n_row = int(n_row*args.labeled_ratio)
+
+        shuffled_indices = np.random.permutation(n_row)
+        labeled_set_size = int(n_row*args.labeled_ratio)
 
         if args.is_active_random:
-            random_n_row = random_n_row * 2
+            labeled_set_size = labeled_set_size * 2
 
-        random_row = random.sample(list(range(n_row)), random_n_row)
+        # random_row = random.sample(list(range(n_row)), random_n_row)
+        L_indices = shuffled_indices[:labeled_set_size]
+        U_indices = shuffled_indices[labeled_set_size:]
 
-        x_train = x_train[random_row]
-        y_train = y_train[random_row]
+        L_x = x_train[L_indices]
+        L_y = y_train[L_indices]
+        U_x = x_train[U_indices]
+        U_y = y_train[U_indices]
 
     # for DEBUG
     if args.debug:
-        print('x shape:', x_train.shape)
-        print('y shape:', y_train.shape)
-        print(x_train.shape[0], 'train samples')
+        print('x shape:', L_x.shape)
+        print('y shape:', L_y.shape)
+        print(L_x.shape[0], 'train samples')
 
     custom_loss = CustomLoss(loss_functions)
-    # model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
     # add reduce_lr, earlystopping
     stopping = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=8)
@@ -474,6 +483,8 @@ if __name__ == '__main__':
         patience=2,
         min_lr=args.learning_rate * 0.001)
 
+    ITERATION = args.iteration
+
     # Set model, result folder
     model_folder_path = 'models_al'
     result_folder_path = 'result_al'
@@ -481,100 +492,108 @@ if __name__ == '__main__':
         model_name, batch_size, epochs, args.learning_rate
     )
     if args.is_active_learning:
-        model_folder_name = '{}_al_r{}_t{}_bs{}_e{}_lr{}'.format(
+        model_folder_name = '{}_al_from_l0_r{}_t{}_bs{}_e{}_lr{}'.format(
             model_name, args.labeled_ratio, args.top_ratio, batch_size, epochs, args.learning_rate
         )
+        ITERATION = ITERATION+1
 
     model_export_path_folder = '{}/{}'.format(model_folder_path, model_folder_name)
-
-    # if args.is_active_learning:
-    #     model_export_path_folder = 'models_al/al_r{}_t{}_m{}_bs{}_e{}'.format(model_name, batch_size, epochs)
-    # else:
-    #     model_export_path_folder = 'models_al/{}_{}_{}'.format(model_name, batch_size, epochs)
 
     if not os.path.exists(model_export_path_folder):
         os.makedirs(model_export_path_folder)
 
-    model_export_path_template = '{}/{}_{}_{}.{}'
+    model_export_path_template = '{}/{}_{}_it{}_m{}.{}'
     result_train_progress_path_template = '{}/train_progress/{}'
 
-    for i in range(args.iteration):
+    for i in range(ITERATION):
+
+        print('Training Iteration : {}'.format(i+1))
+
+        # model_list = []
+        X_pr = []
 
         if args.debug:
-            print('Training Iteration : {}'.format(i+1))
+            print('L_x, L_y shape:', L_x.shape, L_y.shape)
+            print(L_x.shape[0], 'Labeled samples')
+            print(U_x.shape[0], 'Unlabeled samples')
 
-        last_epoch = 0
-        model = create_model(model_name, input_shape, custom_loss.custom_loss)
+        for m in range(args.num_models):
+            model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
-        model_export_path = model_export_path_template.format(model_export_path_folder,
-                                                              loss_functions,
-                                                              input_shape_type,
-                                                              (i + 1),
-                                                              'h5')
+            model_export_path = model_export_path_template.format(model_export_path_folder,
+                                                                  loss_functions,
+                                                                  input_shape_type,
+                                                                  i,
+                                                                  m,
+                                                                  'h5')
 
-        mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min', save_best_only=True)
+            mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min', save_best_only=True)
 
-        if model_name.startswith('cnn') or model_name.startswith('nn'):
-            tic()
-            history = model.fit(x_train, y_train,
-                                batch_size=batch_size,
-                                epochs=epochs,
-                                # pass validtation for monitoring
-                                # validation loss and metrics
-                                validation_data=(x_validation, y_validation),
-                                callbacks=[mc, reduce_lr, stopping])
-            toc()
-            score = model.evaluate(x_train, y_train, verbose=0)
-            print('Train loss:', score[0])
-            print('Train accuracy:', score[1])
-            print("%s: %.2f%%" % (model.metrics_names[1], score[1] * 100))
+            if model_name.startswith('cnn') or model_name.startswith('nn'):
+                tic()
+                history = model.fit(L_x, L_y,
+                                    batch_size=batch_size,
+                                    epochs=epochs,
+                                    # pass validation for monitoring
+                                    # validation loss and metrics
+                                    validation_data=(x_validation, y_validation),
+                                    callbacks=[mc, reduce_lr, stopping])
+                toc()
+                score = model.evaluate(L_x, L_y, verbose=0)
+                print('Train loss:', score[0])
+                print('Train accuracy:', score[1])
+                print("%s: %.2f%%" % (model.metrics_names[1], score[1] * 100))
 
-            # serialize model to JSON
-            # model_json = model.to_json()
-            # if args.is_active_learning:
-            #     model_export_path_folder = 'models_al/al_r{}_t{}_m{}_bs{}_e{}'.format(model_name, batch_size, epochs)
-            # else:
-            #     model_export_path_folder = 'models_al/{}_{}_{}'.format(model_name, batch_size, epochs)
-            #
-            # if not os.path.exists(model_export_path_folder):
-            #     os.makedirs(model_export_path_folder)
-            #
-            # model_export_path_template = '{}/{}_{}_1.{}'
-            # model_export_path = model_export_path_template.format(model_export_path_folder, loss_functions,
-            #                                                       input_shape_type, 'json')
-            # with open(model_export_path, "w") as json_file:
-            #     json_file.write(model_json)
+                # Loss
+                plt.clf()
+                plt.plot(history.history['loss'])
+                plt.plot(history.history['val_loss'])
+                plt.xlabel('Epoch')
+                plt.ylabel('Loss')
+                plt.title('Model - Loss')
+                plt.legend(['Training', 'Validation'], loc='upper right')
+                train_progress_figure_path_folder = result_train_progress_path_template.format(
+                    result_folder_path, model_export_path_folder
+                )
 
-            # serialize weights to HDF5
-            # model.save_weights(
-            #     model_export_path_template.format(model_export_path_folder, loss_functions, input_shape_type, 'h5'))
-            # print("Saved model to disk")
-
-            # Loss
-            plt.clf()
-            plt.plot(history.history['loss'])
-            plt.plot(history.history['val_loss'])
-            plt.xlabel('Epoch')
-            plt.ylabel('Loss')
-            plt.title('Model - Loss')
-            plt.legend(['Training', 'Validation'], loc='upper right')
-            train_progress_figure_path_folder = result_train_progress_path_template.format(
-                result_folder_path, model_export_path_folder
-            )
-
-            if not os.path.exists(train_progress_figure_path_folder):
-                os.makedirs(train_progress_figure_path_folder)
-            plt.savefig('{}/{}_{}_{}.png'.format(train_progress_figure_path_folder, model_name, loss_functions, (i+1)))
-        else:
-            regr = model.fit(x_train, y_train)
+                if not os.path.exists(train_progress_figure_path_folder):
+                    os.makedirs(train_progress_figure_path_folder)
+                plt.savefig('{}/{}_{}_it{}_m{}.png'.format(train_progress_figure_path_folder, model_name, loss_functions, i, m))
+            else:
+                regr = model.fit(x_train, y_train)
 
 
-            model_export_path_folder = 'models_al/{}_{}_{}'.format(model_name, batch_size, epochs)
-            if not os.path.exists(model_export_path_folder):
-                os.makedirs(model_export_path_folder)
+                model_export_path_folder = 'models_al/{}_{}_{}'.format(model_name, batch_size, epochs)
+                if not os.path.exists(model_export_path_folder):
+                    os.makedirs(model_export_path_folder)
 
-            model_export_path_template = '{}/{}_{}_{}.joblib'
-            model_export_path = model_export_path_template.format(model_export_path_folder, loss_functions,
-                                                                  input_shape_type, (i+1))
-            joblib.dump(model, model_export_path)
-            print("Saved model to disk")
+                model_export_path_template = '{}/{}_{}_{}.joblib'
+                model_export_path = model_export_path_template.format(model_export_path_folder, loss_functions,
+                                                                      input_shape_type, (i+1))
+                joblib.dump(model, model_export_path)
+                print("Saved model to disk")
+
+            predict_from_model = model.predict(U_x)
+            X_pr.append(predict_from_model)
+
+        X_pr = np.array(X_pr)
+
+        # Ascending order Sorted
+        rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
+        rpo_array_sum = np.sum(rpo_array, axis=1)
+        rpo_array_arg_sort = np.argsort(rpo_array_sum)
+        rpo_array_sort = np.sort(rpo_array_sum)
+
+        T_indices = int(len(D_x) * args.labeled_ratio * args.top_ratio)
+        U_length = len(rpo_array_arg_sort) - T_indices
+        print('t', T_indices, 'U_length', U_length)
+        U_indices = rpo_array_arg_sort[:U_length]
+        L_indices = rpo_array_arg_sort[U_length:]
+
+        L_x = np.append(L_x, U_x[L_indices], axis=0)
+        L_y = np.append(L_y, U_y[L_indices], axis=0)
+
+        U_x = U_x[U_indices]
+        U_y = U_y[U_indices]
+
+

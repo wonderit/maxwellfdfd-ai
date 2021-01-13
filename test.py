@@ -324,8 +324,8 @@ if __name__ == '__main__':
     )
 
     if args.is_active_learning:
-        model_folder_name = 'al_r{}_t{}_{}_bs{}_e{}_lr{}'.format(
-            args.labeled_ratio, args.top_ratio,args.model, args.batch_size, args.max_epoch, args.learning_rate
+        model_folder_name = '{}_al_from_l0_r{}_t{}_bs{}_e{}_lr{}'.format(
+            args.model, args.labeled_ratio, args.top_ratio, args.batch_size, args.max_epoch, args.learning_rate
         )
 
     result_folder_path = 'result_al'
@@ -336,6 +336,7 @@ if __name__ == '__main__':
 
     folder_path_template = '{}/{}/*.h5'
     search_template = folder_path_template.format(model_folder_path, model_folder_name)
+    print(search_template)
     files = glob.glob(search_template)
     print('model file paths', files)
 
