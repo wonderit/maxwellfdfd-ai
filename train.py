@@ -302,12 +302,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # for testing
-    args.unit_test = True
-    args.debug = True
-    args.is_active_learning = True
-    args.max_epoch = 3
-
     model_name = args.model
     batch_size = int(args.batch_size)
     epochs = int(args.max_epoch)
