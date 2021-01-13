@@ -587,6 +587,11 @@ if __name__ == '__main__':
         L_x = np.append(L_x, U_x[L_indices], axis=0)
         L_y = np.append(L_y, U_y[L_indices], axis=0)
 
+        # shuffle Labeled data
+        shuffle_index = np.random.permutation(len(L_x))
+        L_x = L_x[shuffle_index]
+        L_y = L_y[shuffle_index]
+
         U_x = U_x[U_indices]
         U_y = U_y[U_indices]
 
