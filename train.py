@@ -481,8 +481,8 @@ if __name__ == '__main__':
         model_name, batch_size, epochs, args.learning_rate
     )
     if args.is_active_learning:
-        model_folder_name = 'al_r{}_t{}_{}_bs{}_e{}_lr{}'.format(
-            args.labeled_ratio, args.top_ratio, model_name, batch_size, epochs, args.learning_rate
+        model_folder_name = '{}_al_r{}_t{}_bs{}_e{}_lr{}'.format(
+            model_name, args.labeled_ratio, args.top_ratio, batch_size, epochs, args.learning_rate
         )
 
     model_export_path_folder = '{}/{}'.format(model_folder_path, model_folder_name)
