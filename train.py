@@ -551,7 +551,6 @@ if __name__ == '__main__':
         if i == (ITERATION - 1):
             num_models = 5
             is_different_losses = False
-            model_name='cnn'
 
         for m in range(num_models):
 
@@ -568,15 +567,18 @@ if __name__ == '__main__':
                 custom_loss = CustomLoss(loss_functions)
 
                 if args.is_different_models:
+                    if i == (ITERATION - 1):
+                        model_name = 'cnn'
+                    else:
+                        model_name = rpo_models[m]
                     model_export_path_template = '{}/{}_{}_it{}_m{}_{}.{}'
                     model_export_path = model_export_path_template.format(model_export_path_folder,
                                                                           loss_functions,
                                                                           input_shape_type,
                                                                           i,
                                                                           m,
-                                                                          rpo_models[m],
+                                                                          model_name,
                                                                           'h5')
-                    model_name = rpo_models[m]
                 else:
                     model_export_path = model_export_path_template.format(model_export_path_folder,
                                                                           loss_functions,
@@ -588,7 +590,6 @@ if __name__ == '__main__':
 
 
             if model_name.startswith('cnn') or model_name.startswith('nn'):
-                print('k img data format', K.image_data_format())
                 if model_name.startswith('cnn'):
                     L_x = L_x.reshape(L_x.shape[0], img_rows, img_cols, channels)
                     x_validation = x_validation.reshape(x_validation.shape[0], img_rows, img_cols, channels)
