@@ -563,6 +563,7 @@ if __name__ == '__main__':
                                                                       'h5')
             else:
                 custom_loss = CustomLoss(loss_functions)
+                print('model_export_path_template', model_export_path_template)
                 model_export_path = model_export_path_template.format(model_export_path_folder,
                                                                       loss_functions,
                                                                       input_shape_type,
@@ -599,8 +600,7 @@ if __name__ == '__main__':
                                     callbacks=[mc, reduce_lr, stopping])
                 toc()
                 score = model.evaluate(L_x, L_y, verbose=0)
-                print('Train loss:', score[0])
-                print('Train accuracy:', score[1])
+                print('Model : {}, Train loss: {}, accuracy: {}'.format(model_name, score[0], score[1]))
                 print("%s: %.2f%%" % (model.metrics_names[1], score[1] * 100))
 
                 # Loss
