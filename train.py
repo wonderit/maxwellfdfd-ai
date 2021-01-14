@@ -503,6 +503,10 @@ if __name__ == '__main__':
         model_folder_name = '{}_al_from_l0_r{}_t{}_bs{}_e{}_lr{}'.format(
             model_name, args.labeled_ratio, args.top_ratio, batch_size, epochs, args.learning_rate
         )
+        if args.is_different_losses:
+            model_folder_name = '{}_al_from_l0_w_diff_losses_r{}_t{}_bs{}_e{}_lr{}'.format(
+                model_name, args.labeled_ratio, args.top_ratio, batch_size, epochs, args.learning_rate
+            )
         ITERATION = ITERATION+1
 
     model_export_path_folder = '{}/{}'.format(model_folder_path, model_folder_name)

@@ -327,6 +327,10 @@ if __name__ == '__main__':
         model_folder_name = '{}_al_from_l0_r{}_t{}_bs{}_e{}_lr{}'.format(
             args.model, args.labeled_ratio, args.top_ratio, args.batch_size, args.max_epoch, args.learning_rate
         )
+        if args.is_different_losses:
+            model_folder_name = '{}_al_from_l0_w_diff_losses_r{}_t{}_bs{}_e{}_lr{}'.format(
+                args.model, args.labeled_ratio, args.top_ratio, args.batch_size, args.max_epoch, args.learning_rate
+            )
 
     result_folder_path = 'result_al'
     model_export_path_folder = '{}/scatter_alpha/{}'.format(result_folder_path, model_folder_name)
