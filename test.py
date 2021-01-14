@@ -336,7 +336,7 @@ if __name__ == '__main__':
             )
         if args.is_different_models:
             model_folder_name = '{}_al_from_l0_w_diff_models_r{}_t{}_bs{}_e{}_lr{}'.format(
-                model_name, args.labeled_ratio, args.top_ratio, args.batch_size, args.max_epoch, args.learning_rate
+                args.model, args.labeled_ratio, args.top_ratio, args.batch_size, args.max_epoch, args.learning_rate
             )
 
     result_folder_path = 'result_al'
@@ -350,7 +350,7 @@ if __name__ == '__main__':
 
     if args.is_different_models:
         folder_path_template = '{}/{}/*{}.h5'
-        search_template = folder_path_template.format(model_folder_path, model_folder_name, model_name)
+        search_template = folder_path_template.format(model_folder_path, model_folder_name, args.model)
     print(search_template)
     files = glob.glob(search_template)
     print('model file paths', files)
