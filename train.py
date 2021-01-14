@@ -301,6 +301,7 @@ if __name__ == '__main__':
 
     # arg for rpo lossfunction
     parser.add_argument("-dl", "--is_different_losses", action='store_true')
+    parser.add_argument("-dm", "--is_different_models", action='store_true')
 
 
     args = parser.parse_args()
@@ -481,6 +482,16 @@ if __name__ == '__main__':
             'rmse', 'rmse', 'rmse'
         ]
 
+    # Set RPO Models
+    if args.is_different_models:
+        rpo_models = [
+            'cnn', 'nn', 'rf'
+        ]
+    else:
+        rpo_models = [
+            'cnn', 'cnn', 'cnn'
+        ]
+
     # custom_loss = CustomLoss(loss_functions)
 
     # add reduce_lr, earlystopping
@@ -505,6 +516,10 @@ if __name__ == '__main__':
         )
         if args.is_different_losses:
             model_folder_name = '{}_al_from_l0_w_diff_losses_r{}_t{}_bs{}_e{}_lr{}'.format(
+                model_name, args.labeled_ratio, args.top_ratio, batch_size, epochs, args.learning_rate
+            )
+        if args.is_different_models:
+            model_folder_name = '{}_al_from_l0_w_diff_models_r{}_t{}_bs{}_e{}_lr{}'.format(
                 model_name, args.labeled_ratio, args.top_ratio, batch_size, epochs, args.learning_rate
             )
         ITERATION = ITERATION+1
@@ -555,6 +570,20 @@ if __name__ == '__main__':
                                                                       m,
                                                                       'h5')
 
+            if args.is_different_models:
+
+                custom_loss = CustomLoss(loss_functions)
+                model_export_path_template = '{}/{}_{}_it{}_m{}_{}.{}'
+                model_export_path = model_export_path_template.format(model_export_path_folder,
+                                                                      loss_functions,
+                                                                      input_shape_type,
+                                                                      i,
+                                                                      m,
+                                                                      rpo_models[m],
+                                                                      'h5')
+                model_name = rpo_models[m]
+
+
             model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
             mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min', save_best_only=True)
@@ -590,18 +619,24 @@ if __name__ == '__main__':
                     os.makedirs(train_progress_figure_path_folder)
                 plt.savefig('{}/{}_{}_it{}_m{}.png'.format(train_progress_figure_path_folder, model_name, loss_functions, i, m))
             else:
-                regr = model.fit(x_train, y_train)
+                # regr = model.fit(x_train, y_train)
+                regr = model.fit(L_x, L_y,
+                                    batch_size=batch_size,
+                                    epochs=epochs,
+                                    # pass validation for monitoring
+                                    # validation loss and metrics
+                                    validation_data=(x_validation, y_validation),
+                                    callbacks=[reduce_lr, stopping])
 
-
-                model_export_path_folder = 'models_al/{}_{}_{}'.format(model_name, batch_size, epochs)
-                if not os.path.exists(model_export_path_folder):
-                    os.makedirs(model_export_path_folder)
-
-                model_export_path_template = '{}/{}_{}_{}.joblib'
-                model_export_path = model_export_path_template.format(model_export_path_folder, loss_functions,
-                                                                      input_shape_type, (i+1))
-                joblib.dump(model, model_export_path)
-                print("Saved model to disk")
+                # model_export_path_folder = 'models_al/{}_{}_{}'.format(model_name, batch_size, epochs)
+                # if not os.path.exists(model_export_path_folder):
+                #     os.makedirs(model_export_path_folder)
+                #
+                # model_export_path_template = '{}/{}_{}_{}.joblib'
+                # model_export_path = model_export_path_template.format(model_export_path_folder, loss_functions,
+                #                                                       input_shape_type, (i+1))
+                # joblib.dump(model, model_export_path)
+                # print("Saved model to disk")
 
             if not args.is_active_random:
                 predict_from_model = model.predict(U_x)
