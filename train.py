@@ -486,7 +486,7 @@ if __name__ == '__main__':
     # Set RPO Models
     if args.is_different_models:
         rpo_models = [
-            'cnn', 'cnn', 'nn'
+            'cnn', 'nn', 'rf'
         ]
     else:
         rpo_models = [
