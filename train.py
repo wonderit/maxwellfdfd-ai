@@ -562,28 +562,26 @@ if __name__ == '__main__':
                                                                       m,
                                                                       'h5')
             else:
-                custom_loss = CustomLoss(loss_functions)
-                print('model_export_path_template', model_export_path_template)
-                model_export_path = model_export_path_template.format(model_export_path_folder,
-                                                                      loss_functions,
-                                                                      input_shape_type,
-                                                                      i,
-                                                                      m,
-                                                                      'h5')
-
-            if args.is_different_models:
 
                 custom_loss = CustomLoss(loss_functions)
-                model_export_path_template = '{}/{}_{}_it{}_m{}_{}.{}'
-                model_export_path = model_export_path_template.format(model_export_path_folder,
-                                                                      loss_functions,
-                                                                      input_shape_type,
-                                                                      i,
-                                                                      m,
-                                                                      rpo_models[m],
-                                                                      'h5')
-                model_name = rpo_models[m]
 
+                if args.is_different_models:
+                    model_export_path_template = '{}/{}_{}_it{}_m{}_{}.{}'
+                    model_export_path = model_export_path_template.format(model_export_path_folder,
+                                                                          loss_functions,
+                                                                          input_shape_type,
+                                                                          i,
+                                                                          m,
+                                                                          rpo_models[m],
+                                                                          'h5')
+                    model_name = rpo_models[m]
+                else:
+                    model_export_path = model_export_path_template.format(model_export_path_folder,
+                                                                          loss_functions,
+                                                                          input_shape_type,
+                                                                          i,
+                                                                          m,
+                                                                          'h5')
 
             model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
