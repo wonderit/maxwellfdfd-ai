@@ -299,6 +299,9 @@ if __name__ == '__main__':
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
 
+    # arg for rpo lossfunction
+    parser.add_argument("-dl", "--is_different_losses", action='store_true')
+
 
     args = parser.parse_args()
 
@@ -467,7 +470,18 @@ if __name__ == '__main__':
         print('y shape:', L_y.shape)
         print(L_x.shape[0], 'train samples')
 
-    custom_loss = CustomLoss(loss_functions)
+
+    # Set RPO LOSS
+    if args.is_different_losses:
+        rpo_losses = [
+            'rmse', 'rmse,diff_rmse', 'rmse,diff_bce'
+        ]
+    else:
+        rpo_losses = [
+            'rmse', 'rmse', 'rmse'
+        ]
+
+    # custom_loss = CustomLoss(loss_functions)
 
     # add reduce_lr, earlystopping
     stopping = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=8)
@@ -512,14 +526,25 @@ if __name__ == '__main__':
             print(U_x.shape[0], 'Unlabeled samples')
 
         for m in range(args.num_models):
-            model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
-            model_export_path = model_export_path_template.format(model_export_path_folder,
-                                                                  loss_functions,
-                                                                  input_shape_type,
-                                                                  i,
-                                                                  m,
-                                                                  'h5')
+            if args.is_different_losses:
+                custom_loss = CustomLoss(rpo_losses[m])
+                model_export_path = model_export_path_template.format(model_export_path_folder,
+                                                                      rpo_losses[m],
+                                                                      input_shape_type,
+                                                                      i,
+                                                                      m,
+                                                                      'h5')
+            else:
+                custom_loss = CustomLoss(loss_functions)
+                model_export_path = model_export_path_template.format(model_export_path_folder,
+                                                                      loss_functions,
+                                                                      input_shape_type,
+                                                                      i,
+                                                                      m,
+                                                                      'h5')
+
+            model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
             mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min', save_best_only=True)
 
