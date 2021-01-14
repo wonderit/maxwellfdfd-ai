@@ -336,7 +336,7 @@ if __name__ == '__main__':
             )
         if args.is_different_models:
             model_folder_name = '{}_al_from_l0_w_diff_models_r{}_t{}_bs{}_e{}_lr{}'.format(
-                model_name, args.labeled_ratio, args.top_ratio, batch_size, epochs, args.learning_rate
+                model_name, args.labeled_ratio, args.top_ratio, args.batch_size, args.max_epoch, args.learning_rate
             )
 
     result_folder_path = 'result_al'
