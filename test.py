@@ -313,6 +313,8 @@ if __name__ == '__main__':
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
 
+    # arg for rpo lossfunction
+    parser.add_argument("-dl", "--is_different_losses", action='store_true')
 
     args = parser.parse_args()
 
