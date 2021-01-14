@@ -529,9 +529,16 @@ if __name__ == '__main__':
             print(L_x.shape[0], 'Labeled samples')
             print(U_x.shape[0], 'Unlabeled samples')
 
-        for m in range(args.num_models):
+        num_models = args.num_models
+        is_different_losses = args.is_different_losses
 
-            if args.is_different_losses:
+        if i == (ITERATION - 1):
+            num_models = 5
+            is_different_losses = False
+
+        for m in range(num_models):
+
+            if is_different_losses:
                 custom_loss = CustomLoss(rpo_losses[m])
                 model_export_path = model_export_path_template.format(model_export_path_folder,
                                                                       rpo_losses[m],
