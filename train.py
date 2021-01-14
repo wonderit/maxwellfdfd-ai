@@ -120,6 +120,7 @@ def compress_image(prev_image, n):
 
 
 def create_model(model_type, model_input_shape, loss_function):
+    print('model', model_type, 'model_input_shape', model_input_shape)
     if model_type.startswith('cnn'):
         model = Sequential()
         model.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape, use_bias=False))
@@ -485,7 +486,7 @@ if __name__ == '__main__':
     # Set RPO Models
     if args.is_different_models:
         rpo_models = [
-            'cnn', 'nn', 'rf'
+            'cnn', 'cnn', 'nn'
         ]
     else:
         rpo_models = [
@@ -550,6 +551,7 @@ if __name__ == '__main__':
         if i == (ITERATION - 1):
             num_models = 5
             is_different_losses = False
+            model_name='cnn'
 
         for m in range(num_models):
 
@@ -583,12 +585,24 @@ if __name__ == '__main__':
                                                                           m,
                                                                           'h5')
 
-            model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
-            mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min', save_best_only=True)
 
             if model_name.startswith('cnn') or model_name.startswith('nn'):
+                print('k img data format', K.image_data_format())
+                if model_name.startswith('cnn'):
+                    L_x = L_x.reshape(L_x.shape[0], img_rows, img_cols, channels)
+                    x_validation = x_validation.reshape(x_validation.shape[0], img_rows, img_cols, channels)
+                    input_shape = (img_rows, img_cols, channels)
+                else:
+                    L_x = L_x.reshape(L_x.shape[0], img_rows * img_cols * channels)
+                    x_validation = x_validation.reshape(x_validation.shape[0], img_rows * img_cols * channels)
+                    input_shape = channels * img_rows * img_cols
+
                 tic()
+                model = create_model(model_name, input_shape, custom_loss.custom_loss)
+
+                mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min',
+                                                     save_best_only=True)
                 history = model.fit(L_x, L_y,
                                     batch_size=batch_size,
                                     epochs=epochs,
@@ -617,14 +631,10 @@ if __name__ == '__main__':
                     os.makedirs(train_progress_figure_path_folder)
                 plt.savefig('{}/{}_{}_it{}_m{}.png'.format(train_progress_figure_path_folder, model_name, loss_functions, i, m))
             else:
-                # regr = model.fit(x_train, y_train)
-                regr = model.fit(L_x, L_y,
-                                    batch_size=batch_size,
-                                    epochs=epochs,
-                                    # pass validation for monitoring
-                                    # validation loss and metrics
-                                    validation_data=(x_validation, y_validation),
-                                    callbacks=[reduce_lr, stopping])
+
+                model = create_model(model_name, input_shape, custom_loss.custom_loss)
+
+                regr = model.fit(L_x, L_y)
 
                 # model_export_path_folder = 'models_al/{}_{}_{}'.format(model_name, batch_size, epochs)
                 # if not os.path.exists(model_export_path_folder):
@@ -637,6 +647,12 @@ if __name__ == '__main__':
                 # print("Saved model to disk")
 
             if not args.is_active_random:
+
+                if model_name.startswith('cnn'):
+                    U_x = U_x.reshape(U_x.shape[0], img_rows, img_cols, channels)
+                else:
+                    U_x = U_x.reshape(U_x.shape[0], img_rows * img_cols * channels)
+
                 predict_from_model = model.predict(U_x)
                 X_pr.append(predict_from_model)
 
