@@ -361,8 +361,8 @@ if __name__ == '__main__':
                     image = np.array(image, dtype=np.uint8)
                 except:
                     continue
-            if model_name.startswith('cnn') is False and model_name.startswith('nn') is False:
-                image = compress_image(image, 10)
+            # if model_name.startswith('cnn') is False and model_name.startswith('nn') is False:
+            #     image = compress_image(image, 10)
 
             if model_name.startswith('cnn_small'):
                 image = compress_image(image, 5)
@@ -398,8 +398,8 @@ if __name__ == '__main__':
                 except:
                     continue
 
-            if model_name.startswith('cnn') is False and model_name.startswith('nn') is False:
-                image = compress_image(image, 10)
+            # if model_name.startswith('cnn') is False and model_name.startswith('nn') is False:
+            #     image = compress_image(image, 10)
 
             if model_name.startswith('cnn_small'):
                 image = compress_image(image, 5)
@@ -419,33 +419,35 @@ if __name__ == '__main__':
     y_validation = np.array(y_validation)
     y_validation = np.true_divide(y_validation, 2767.1)
 
-    if model_name.startswith('cnn'):
-        if K.image_data_format() == 'channels_first':
-            x_train = x_train.reshape(x_train.shape[0], channels, img_rows, img_cols)
-            y_train = y_train.reshape(y_train.shape[0], channels, img_rows, img_cols)
-
-            x_validation = x_validation.reshape(x_validation.shape[0], channels, img_rows, img_cols)
-            y_validaton = y_validaton.reshape(y_validaton.shape[0], channels, img_rows, img_cols)
-            input_shape = (channels, img_rows, img_cols)
-        else:
-            x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, channels)
-            x_validation = x_validation.reshape(x_validation.shape[0], img_rows, img_cols, channels)
-            input_shape = (img_rows, img_cols, channels)
-    else:
-        if K.image_data_format() == 'channels_first':
-            x_train = x_train.reshape(x_train.shape[0], channels * img_rows * img_cols)
-            y_train = y_train.reshape(y_train.shape[0], channels * img_rows * img_cols)
-            x_validation = x_validation.reshape(x_validation.shape[0], channels * img_rows * img_cols)
-            y_validaton = y_validaton.reshape(y_validaton.shape[0], channels * img_rows * img_cols)
-            input_shape = channels * img_rows * img_cols
-        else:
-            x_train = x_train.reshape(x_train.shape[0], img_rows * img_cols * channels)
-            x_validation = x_validation.reshape(x_validation.shape[0], img_rows * img_cols * channels)
-            input_shape = channels * img_rows * img_cols
+    # if model_name.startswith('cnn'):
+    #     if K.image_data_format() == 'channels_first':
+    #         x_train = x_train.reshape(x_train.shape[0], channels, img_rows, img_cols)
+    #         y_train = y_train.reshape(y_train.shape[0], channels, img_rows, img_cols)
+    #
+    #         x_validation = x_validation.reshape(x_validation.shape[0], channels, img_rows, img_cols)
+    #         y_validaton = y_validaton.reshape(y_validaton.shape[0], channels, img_rows, img_cols)
+    #         input_shape = (channels, img_rows, img_cols)
+    #     else:
+    #         x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, channels)
+    #         x_validation = x_validation.reshape(x_validation.shape[0], img_rows, img_cols, channels)
+    #         input_shape = (img_rows, img_cols, channels)
+    # else:
+    #     if K.image_data_format() == 'channels_first':
+    #         x_train = x_train.reshape(x_train.shape[0], channels * img_rows * img_cols)
+    #         y_train = y_train.reshape(y_train.shape[0], channels * img_rows * img_cols)
+    #         x_validation = x_validation.reshape(x_validation.shape[0], channels * img_rows * img_cols)
+    #         y_validaton = y_validaton.reshape(y_validaton.shape[0], channels * img_rows * img_cols)
+    #         input_shape = channels * img_rows * img_cols
+    #     else:
+    #         x_train = x_train.reshape(x_train.shape[0], img_rows * img_cols * channels)
+    #         x_validation = x_validation.reshape(x_validation.shape[0], img_rows * img_cols * channels)
+    #         input_shape = channels * img_rows * img_cols
 
     D_x = x_train
     D_y = y_train
-    L_x, L_y, U_x, U_y = None, None, None, None
+    # L_x, L_y, U_x, U_y = None, None, None, None
+    L_x = D_x
+    L_y = D_y
 
     if args.is_active_learning:
         # import random
@@ -645,7 +647,7 @@ if __name__ == '__main__':
                 reduced_L_x = reduced_L_x.reshape(reduced_L_x.shape[0], -1)
 
                 for j in range(x_validation.shape[0]):
-                    compressed_image = compress_image(x_validation[i, :], 10)
+                    compressed_image = compress_image(x_validation[j, :], 10)
                     reduced_valid_x.append(compressed_image)
 
                 reduced_img_rows = img_rows // 10
@@ -677,7 +679,7 @@ if __name__ == '__main__':
                 # joblib.dump(model, model_export_path)
                 # print("Saved model to disk")
 
-            if not args.is_active_random:
+            if not args.is_active_random and args.is_active_learning:
                 resized_U_x = U_x
                 if model_name.startswith('cnn'):
                     resized_U_x = U_x.reshape(U_x.shape[0], img_rows, img_cols, channels)
