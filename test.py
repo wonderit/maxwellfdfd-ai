@@ -349,7 +349,7 @@ if __name__ == '__main__':
     search_template = folder_path_template.format(model_folder_path, model_folder_name)
 
     if args.is_different_models:
-        folder_path_template = '{}/{}/*{}.h5'
+        folder_path_template = '{}/{}/*_{}.h5'
         search_template = folder_path_template.format(model_folder_path, model_folder_name, args.model)
     print(search_template)
     files = glob.glob(search_template)
