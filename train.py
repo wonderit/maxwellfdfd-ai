@@ -478,7 +478,7 @@ if __name__ == '__main__':
     # Set RPO LOSS
     if args.is_different_losses:
         rpo_losses = [
-            'rmse', 'rmse,diff_rmse', 'rmse,diff_bce'
+            'rmse', 'rmse,diff_rmse', 'rmse'
         ]
     else:
         rpo_losses = [
@@ -488,7 +488,7 @@ if __name__ == '__main__':
     # Set RPO Models
     if args.is_different_models:
         rpo_models = [
-           'cnn', 'nn', 'rf'
+           'cnn', 'cnn', 'nn'
         ]
     else:
         rpo_models = [
@@ -532,7 +532,6 @@ if __name__ == '__main__':
     if not os.path.exists(model_export_path_folder):
         os.makedirs(model_export_path_folder)
 
-    model_export_path_template = '{}/{}_{}_it{}_m{}.{}'
     result_train_progress_path_template = '{}/train_progress/{}'
 
     for i in range(ITERATION):
@@ -556,6 +555,7 @@ if __name__ == '__main__':
 
         for m in range(num_models):
 
+            model_export_path_template = '{}/{}_{}_it{}_m{}.{}'
             if is_different_losses:
                 custom_loss = CustomLoss(rpo_losses[m])
                 model_export_path = model_export_path_template.format(model_export_path_folder,
@@ -564,6 +564,17 @@ if __name__ == '__main__':
                                                                       i,
                                                                       m,
                                                                       'h5')
+
+                if args.is_different_models:
+                    model_export_path_template = '{}/{}_{}_it{}_m{}_{}.{}'
+                    model_name = rpo_models[m]
+                    model_export_path = model_export_path_template.format(model_export_path_folder,
+                                                                          loss_functions,
+                                                                          input_shape_type,
+                                                                          i,
+                                                                          m,
+                                                                          model_name,
+                                                                          'h5')
             else:
 
                 custom_loss = CustomLoss(loss_functions)
