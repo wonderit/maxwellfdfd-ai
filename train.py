@@ -2,7 +2,8 @@ import pandas as pd
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Activation
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, mean_squared_error
+from math import sqrt
 from keras.optimizers import Adam
 import keras
 import matplotlib.pyplot as plt
@@ -660,7 +661,11 @@ if __name__ == '__main__':
 
                 rfr_prediction = regr.predict(reduced_valid_x)
 
-                print('regressor R square :', r2_score(y_validation, rfr_prediction))
+                r2 = r2_score(y_validation, rfr_prediction)
+                meanSquaredError = mean_squared_error(y_validation, rfr_prediction)
+                rmse = sqrt(meanSquaredError)
+                print('y_val, rfr_pred', y_validation.shape, rfr_prediction.shape)
+                print('regressor R square :', r2, 'rmse:', rmse)
 
                 # model_export_path_folder = 'models_al/{}_{}_{}'.format(model_name, batch_size, epochs)
                 # if not os.path.exists(model_export_path_folder):
