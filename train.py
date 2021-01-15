@@ -121,7 +121,6 @@ def compress_image(prev_image, n):
 
 
 def create_model(model_type, model_input_shape, loss_function):
-    print('model', model_type, 'model_input_shape', model_input_shape)
     if model_type.startswith('cnn'):
         model = Sequential()
         model.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape, use_bias=False))
@@ -142,7 +141,7 @@ def create_model(model_type, model_input_shape, loss_function):
         model.add(Dense(24, activation='sigmoid'))
         model.compile(loss=loss_function, optimizer=Adam(lr=args.learning_rate), metrics=['accuracy'])
     elif model_type.startswith('rf'):
-        regr = RandomForestRegressor(n_estimators=30)
+        regr = RandomForestRegressor(n_estimators=100, max_depth=30)
         return regr
     elif model_type.startswith('svm'):
         regr = SVR(kernel='rbf', C=1e3, gamma=0.1)
@@ -361,7 +360,6 @@ if __name__ == '__main__':
                     image = np.array(image, dtype=np.uint8)
                 except:
                     continue
-
             if model_name.startswith('cnn') is False and model_name.startswith('nn') is False:
                 image = compress_image(image, 10)
 
@@ -487,7 +485,7 @@ if __name__ == '__main__':
     # Set RPO Models
     if args.is_different_models:
         rpo_models = [
-            'cnn', 'cnn', 'nn'
+           'cnn', 'nn', 'rf'
         ]
     else:
         rpo_models = [
@@ -591,13 +589,15 @@ if __name__ == '__main__':
 
 
             if model_name.startswith('cnn') or model_name.startswith('nn'):
+                input_L_x = L_x
+                valid_x = x_validation
                 if model_name.startswith('cnn'):
-                    L_x = L_x.reshape(L_x.shape[0], img_rows, img_cols, channels)
-                    x_validation = x_validation.reshape(x_validation.shape[0], img_rows, img_cols, channels)
+                    input_L_x = L_x.reshape(L_x.shape[0], img_rows, img_cols, channels)
+                    valid_x = x_validation.reshape(x_validation.shape[0], img_rows, img_cols, channels)
                     input_shape = (img_rows, img_cols, channels)
                 else:
-                    L_x = L_x.reshape(L_x.shape[0], img_rows * img_cols * channels)
-                    x_validation = x_validation.reshape(x_validation.shape[0], img_rows * img_cols * channels)
+                    input_L_x = L_x.reshape(L_x.shape[0], img_rows * img_cols * channels)
+                    valid_x = x_validation.reshape(x_validation.shape[0], img_rows * img_cols * channels)
                     input_shape = channels * img_rows * img_cols
 
                 tic()
@@ -605,15 +605,15 @@ if __name__ == '__main__':
 
                 mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min',
                                                      save_best_only=True)
-                history = model.fit(L_x, L_y,
+                history = model.fit(input_L_x, L_y,
                                     batch_size=batch_size,
                                     epochs=epochs,
                                     # pass validation for monitoring
                                     # validation loss and metrics
-                                    validation_data=(x_validation, y_validation),
+                                    validation_data=(valid_x, y_validation),
                                     callbacks=[mc, reduce_lr, stopping])
                 toc()
-                score = model.evaluate(L_x, L_y, verbose=0)
+                score = model.evaluate(input_L_x, L_y, verbose=0)
                 print('Model : {}, Train loss: {}, accuracy: {}'.format(model_name, score[0], score[1]))
                 print("%s: %.2f%%" % (model.metrics_names[1], score[1] * 100))
 
@@ -633,12 +633,32 @@ if __name__ == '__main__':
                     os.makedirs(train_progress_figure_path_folder)
                 plt.savefig('{}/{}_{}_it{}_m{}.png'.format(train_progress_figure_path_folder, model_name, loss_functions, i, m))
             else:
+                # reshape input data (100, 200) -> (10, 20)
+                reduced_L_x = []
+                reduced_L_y = []
+                reduced_valid_x = []
+                for i in range(L_x.shape[0]):
+                    compressed_image = compress_image(L_x[i, :], 10)
+                    reduced_L_x.append(compressed_image)
+                reduced_L_x = np.array(reduced_L_x)
+                reduced_L_x = reduced_L_x.reshape(reduced_L_x.shape[0], -1)
+
+                for j in range(x_validation.shape[0]):
+                    compressed_image = compress_image(x_validation[i, :], 10)
+                    reduced_valid_x.append(compressed_image)
+
+                reduced_img_rows = img_rows // 10
+                reduced_img_cols = img_cols // 10
+
+                reduced_valid_x = np.array(reduced_valid_x)
+                reduced_valid_x = reduced_valid_x.reshape(reduced_valid_x.shape[0], -1)
+                input_shape = channels * reduced_img_rows * reduced_img_cols
 
                 model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
-                regr = model.fit(L_x, L_y)
+                regr = model.fit(reduced_L_x, L_y)
 
-                rfr_prediction = regr.predict(x_validation)
+                rfr_prediction = regr.predict(reduced_valid_x)
 
                 print('regressor R square :', r2_score(y_validation, rfr_prediction))
 
@@ -653,13 +673,21 @@ if __name__ == '__main__':
                 # print("Saved model to disk")
 
             if not args.is_active_random:
-
+                resized_U_x = U_x
                 if model_name.startswith('cnn'):
-                    U_x = U_x.reshape(U_x.shape[0], img_rows, img_cols, channels)
+                    resized_U_x = U_x.reshape(U_x.shape[0], img_rows, img_cols, channels)
                 else:
-                    U_x = U_x.reshape(U_x.shape[0], img_rows * img_cols * channels)
+                    if model_name.startswith('nn'):
+                        resized_U_x = U_x.reshape(U_x.shape[0], img_rows * img_cols * channels)
+                    else:
+                        resized_U_x = []
+                        for j in range(U_x.shape[0]):
+                            compressed_image = compress_image(U_x[i, :], 10)
+                            resized_U_x.append(compressed_image)
+                        resized_U_x = np.array(resized_U_x)
+                        resized_U_x = resized_U_x.reshape(resized_U_x.shape[0], -1)
 
-                predict_from_model = model.predict(U_x)
+                predict_from_model = model.predict(resized_U_x)
                 X_pr.append(predict_from_model)
 
         if not args.is_active_random:
