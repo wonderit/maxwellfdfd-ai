@@ -141,7 +141,7 @@ def create_model(model_type, model_input_shape, loss_function):
         model.add(Dense(24, activation='sigmoid'))
         model.compile(loss=loss_function, optimizer=Adam(lr=args.learning_rate), metrics=['accuracy'])
     elif model_type.startswith('rf'):
-        regr = RandomForestRegressor(n_estimators=100, max_depth=30, random_state=2)
+        regr = RandomForestRegressor(n_estimators=10, max_depth=30, random_state=2)
         return regr
     elif model_type.startswith('svm'):
         regr = SVR(kernel='rbf', C=1e3, gamma=0.1)
@@ -182,7 +182,7 @@ def create_model(model_type, model_input_shape, loss_function):
     else:
         model = Sequential()
         model.add(Dense(512, activation='relu', input_dim=model_input_shape))
-        model.add(Dense(512, activation='relu'))
+        model.add(Dense(256, activation='relu'))
         model.add(Dense(24, activation='sigmoid'))
         model.compile(loss=loss_function, optimizer=Adam(lr=args.learning_rate), metrics=['accuracy'])
 
