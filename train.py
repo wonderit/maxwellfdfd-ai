@@ -2,6 +2,7 @@ import pandas as pd
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Activation
+from sklearn.metrics import r2_score
 from keras.optimizers import Adam
 import keras
 import matplotlib.pyplot as plt
@@ -141,7 +142,7 @@ def create_model(model_type, model_input_shape, loss_function):
         model.add(Dense(24, activation='sigmoid'))
         model.compile(loss=loss_function, optimizer=Adam(lr=args.learning_rate), metrics=['accuracy'])
     elif model_type.startswith('rf'):
-        regr = RandomForestRegressor(n_estimators=10, max_depth=30, random_state=2)
+        regr = RandomForestRegressor(n_estimators=30)
         return regr
     elif model_type.startswith('svm'):
         regr = SVR(kernel='rbf', C=1e3, gamma=0.1)
@@ -486,7 +487,7 @@ if __name__ == '__main__':
     # Set RPO Models
     if args.is_different_models:
         rpo_models = [
-            'cnn', 'nn', 'rf'
+            'cnn', 'cnn', 'nn'
         ]
     else:
         rpo_models = [
@@ -636,6 +637,10 @@ if __name__ == '__main__':
                 model = create_model(model_name, input_shape, custom_loss.custom_loss)
 
                 regr = model.fit(L_x, L_y)
+
+                rfr_prediction = regr.predict(x_validation)
+
+                print('regressor R square :', r2_score(y_validation, rfr_prediction))
 
                 # model_export_path_folder = 'models_al/{}_{}_{}'.format(model_name, batch_size, epochs)
                 # if not os.path.exists(model_export_path_folder):
