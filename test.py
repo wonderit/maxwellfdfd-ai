@@ -367,7 +367,7 @@ if __name__ == '__main__':
             loss_function = CustomLoss(args.loss_function)
             loaded_model = load_model(model_file_path, compile=False)
             # loaded_model.compile(loss=loss_function)
-            print("Loaded model({}) from disk".format(parsed_model_name))
+            print("Loaded model({}) from disk".format(model_file_path))
 
             if parsed_model_name.startswith('cnn'):
                 tic()
