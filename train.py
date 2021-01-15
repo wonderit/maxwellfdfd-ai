@@ -569,7 +569,7 @@ if __name__ == '__main__':
                     model_export_path_template = '{}/{}_{}_it{}_m{}_{}.{}'
                     model_name = rpo_models[m]
                     model_export_path = model_export_path_template.format(model_export_path_folder,
-                                                                          loss_functions,
+                                                                          rpo_losses[m],
                                                                           input_shape_type,
                                                                           i,
                                                                           m,
