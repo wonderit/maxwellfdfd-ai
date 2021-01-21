@@ -492,7 +492,7 @@ if __name__ == '__main__':
         ]
     else:
         rpo_models = [
-            'cnn', 'cnn', 'cnn'
+            'cnn', 'cnn', 'cnn', 'cnn', 'cnn'
         ]
 
     # custom_loss = CustomLoss(loss_functions)
@@ -550,7 +550,7 @@ if __name__ == '__main__':
         is_different_losses = args.is_different_losses
 
         if i == (ITERATION - 1):
-            num_models = 5
+            num_models = 7
             is_different_losses = False
 
         for m in range(num_models):
