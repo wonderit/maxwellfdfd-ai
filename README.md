@@ -67,7 +67,7 @@ pip install c:\{pip-dependency}\scikit_learn-0.21.3-cp37-cp37m-win_amd64.whl --n
 pandas-1.2.0-cp37-cp37m-manylinux1_x86_64.whl 
 
 source py3-maxwellfdfd/bin/activate
-module load cuda10.0 cudnn_v7.4_cuda10.0
+module load cuda10.0 cudnn_v7.6.1_cuda10.0
 ```
 
  

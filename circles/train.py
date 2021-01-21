@@ -223,6 +223,8 @@ if __name__ == '__main__':
 
     print('Image data reshaping start')
     x_train_image = x_train_image.reshape(x_train_image.shape[0], img_rows, img_cols, channels)
+
+    x_test_image = x_test_image.reshape(x_test_image.shape[0], img_rows, img_cols, channels)
     x_validation_image = x_validation_image.reshape(x_validation_image.shape[0], img_rows, img_cols, channels)
     input_shape = (img_rows, img_cols, channels)
 
