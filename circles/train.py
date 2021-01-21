@@ -1,6 +1,6 @@
 import pandas as pd
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten
+from keras.models import Sequential, Model
+from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Conv2D, MaxPooling2D, Activation, Concatenate
 from keras.optimizers import Adam
 import keras
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", help="Select model type.", default="cnn")
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)",
-                        default='rmse')
+                        default='mse')
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", default=0.001)
     parser.add_argument("-e", "--epochs", help="Set epochs", default=50)
     parser.add_argument("-b", "--batch_size", help="Set batch size", default=128)
@@ -205,23 +205,36 @@ if __name__ == '__main__':
     x_validation_image = x_train_val_image[valid_idx]
     y_validation = ytrain[valid_idx]
 
+    if args.unit_test:
+        print('unit_test start')
+        x_train_col = x_train_col[:1000]
+        x_train_image = x_train_image[:1000]
+        y_train = y_train[:1000]
+
+        x_validation_col = x_validation_col[:1000]
+        x_validation_image = x_validation_image[:1000]
+        y_validation = y_validation[:1000]
+
     print('Data Split Finished.')
     print(K.image_data_format())
 
     img_rows, img_cols, channels = 160, 160, 1
 
+
+    print('Image data reshaping start')
     x_train_image = x_train_image.reshape(x_train_image.shape[0], img_rows, img_cols, channels)
     x_validation_image = x_validation_image.reshape(x_validation_image.shape[0], img_rows, img_cols, channels)
     input_shape = (img_rows, img_cols, channels)
 
+    print('Image data reshaping finished')
     # for DEBUG
     # print('x shape:', x_train.shape)
     # print('y shape:', y_train.shape)
     # print(x_train.shape[0], 'train samples')
 
     # img_model = create_model(model_name, input_shape, 'rmse')
-    # input_1 = Input(shape=input_shape, name="design_image")
-    # input_2 = Input(shape=(2,), name="ab")
+    input_1 = Input(shape=input_shape, name="design_image")
+    input_2 = Input(shape=(2,), name="ab")
 
     conv = Sequential()
 
@@ -244,8 +257,17 @@ if __name__ == '__main__':
     fc_model = Sequential()
     fc_model.add(Dense(2, input_shape=(2,), activation='relu'))
 
-    model = Concatenate([conv, fc_model])
-    model.add(Dense(4, activation='sigmoid'))
+    conv_output = conv(input_1)
+    fc_output = fc_model(input_2)
+
+    concat = Concatenate()([conv_output, fc_output])
+
+    dense_layer = Dense(128, activation='relu')(concat)
+
+    output = Dense(4, activation='sigmoid')(dense_layer)
+
+    model = Model([input_1, input_2], output)
+    # model.add(Dense(4, activation='sigmoid'))
 
     model.compile(loss=loss_functions, optimizer=Adam(lr=args.learning_rate), metrics=['accuracy'])
 
