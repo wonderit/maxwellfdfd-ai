@@ -1,4 +1,3 @@
-
 import pandas as pd
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
@@ -8,19 +7,11 @@ import keras
 import matplotlib.pyplot as plt
 from keras import backend as K
 import tensorflow as tf
-from keras import losses
-from PIL import Image
 import numpy as np
 import argparse
 import os
-from sklearn.multioutput import MultiOutputRegressor
-from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
-from sklearn.neural_network import MLPRegressor
-from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, GradientBoostingRegressor, AdaBoostRegressor
-from sklearn.svm import SVR
 from sklearn.externals import joblib
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import r2_score
 
 def tic():
     import time
@@ -154,11 +145,13 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)",
                         default='rmse')
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", default=0.001)
-    parser.add_argument("-e", "--epochs", help="Set epochs", default=300)
+    parser.add_argument("-e", "--epochs", help="Set epochs", default=50)
     parser.add_argument("-b", "--batch_size", help="Set batch size", default=128)
     parser.add_argument("-n", "--is_normalized", help="Set is Normalized", action='store_true')
     parser.add_argument("-d", "--data_type", help="Select data type.. (train, valid, test)",
                         default='train')
+    # arg for testing parameters
+    parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
 
     args = parser.parse_args()
     model_name = args.model
@@ -166,96 +159,60 @@ if __name__ == '__main__':
     epochs = int(args.epochs)
     loss_functions = args.loss_function
 
-    print('Data Loading... Train dataset Start.')
+    print('CSV Data Loading....')
+    csv_data = pd.read_csv(CSV_FILE_PATH)
+    print('CSV Data Loading finished (shape : {})'.format(csv_data.shape))
 
-    data = pd.read_csv(CSV_FILE_PATH)
-    print(data.shape)
+    print('image data loading...')
     image_data = np.load(IMAGE_FILE_PATH)
+    print('image data loaded')
+
+    # of train, test set
     n_train = image_data['ytrain'].shape[0]
     n_test = image_data['ytest'].shape[0]
 
-    train_data = data[:n_train].to_numpy()
-    test_data = data[n_train:].to_numpy()
+    # csv data train/test split
+    train_data = csv_data[:n_train].to_numpy()
+    test_data = csv_data[n_train:].to_numpy()
 
-    print(train_data.shape, test_data.shape)
-
-
-    x_train_image = image_data['xtrain']
+    # split train/valid image
+    x_train_val_image = image_data['xtrain']
     ytrain = image_data['ytrain']
 
     x_test_image = image_data['xtest']
-    ytest = image_data['ytest']
+    y_test = image_data['ytest']
 
-    # Binarize
-
+    # Binarize Image
     # binarized = 1.0 * (img > threshold)
-    x_train_image = 1.0 * (x_train_image > 0)
+    x_train_val_image = 1.0 * (x_train_val_image > 0)
     x_test_image = 1.0 * (x_test_image > 0)
 
-
-    print('Train set : {}, Test set :{}'.format(x_train_image.shape[0], x_test.shape[0]))
-    print(x_train_image.shape, x_train_image.shape, max(x_train_image[0]))
-
-    x_train_0 = train_data[:, :2]
-    x_test_0 = test_data[:, :2]
-    print('xtrain0', x_train_0.shape)
+    # get input columns
+    x_train = train_data[:, :2]
+    x_test = test_data[:, :2]
 
     shuffled_indices = np.random.permutation(n_train)
     train_size = int(n_train * 0.75)
     train_idx, valid_idx = shuffled_indices[:train_size], shuffled_indices[train_size:]
-    print(train_idx.shape, train_idx[1:2])
-    print(valid_idx.shape, valid_idx[0:2])
 
-    exit()
-
-    print('Data Loading... Train dataset Finished.')
-    print('Data Loading... Validation dataset Start.')
+    print('Data split.')
     # Train : Validation : Test = 3:1:1
-    x_train = train_data[train_idx]
+    x_train_col = x_train[train_idx]
+    x_train_image = x_train_val_image[train_idx]
     y_train = ytrain[train_idx]
 
-    x_validation = train_data[valid_idx]
+    x_validation_col = x_train[valid_idx]
+    x_validation_image = x_train_val_image[valid_idx]
     y_validation = ytrain[valid_idx]
 
-    print('Data Loading... Validation dataset Finished.')
-    # x_train = np.array(x_train)
-    # y_train = np.array(y_train)
-    # y_train = np.true_divide(y_train, 2767.1)
-    #
-    # x_validation = np.array(x_validation)
-    # y_validation = np.array(y_validation)
-    # y_validation = np.true_divide(y_validation, 2767.1)
-    #
-    # if args.is_normalized:
-    #     print('y_train mean : ', y_train.mean(), np.std(y_train))
-    #     MEAN = 0.5052
-    #     STD = 0.2104
-    #     y_train = scale(y_train, MEAN, STD)
-    #     y_validaton = scale(y_validaton, MEAN, STD)
+    print('Data Split Finished.')
+    print(K.image_data_format())
 
-    if model_name.startswith('cnn'):
-        if K.image_data_format() == 'channels_first':
-            x_train = x_train.reshape(x_train.shape[0], channels, img_rows, img_cols)
-            y_train = y_train.reshape(y_train.shape[0], channels, img_rows, img_cols)
+    img_rows, img_cols, channels = 160, 160, 1
 
-            x_validation = x_validation.reshape(x_validation.shape[0], channels, img_rows, img_cols)
-            y_validaton = y_validaton.reshape(y_validaton.shape[0], channels, img_rows, img_cols)
-            input_shape = (channels, img_rows, img_cols)
-        else:
-            x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, channels)
-            x_validation = x_validation.reshape(x_validation.shape[0], img_rows, img_cols, channels)
-            input_shape = (img_rows, img_cols, channels)
-    else:
-        if K.image_data_format() == 'channels_first':
-            x_train = x_train.reshape(x_train.shape[0], channels * img_rows * img_cols)
-            y_train = y_train.reshape(y_train.shape[0], channels * img_rows * img_cols)
-            x_validation = x_validation.reshape(x_validation.shape[0], channels * img_rows * img_cols)
-            y_validaton = y_validaton.reshape(y_validaton.shape[0], channels * img_rows * img_cols)
-            input_shape = channels * img_rows * img_cols
-        else:
-            x_train = x_train.reshape(x_train.shape[0], img_rows * img_cols * channels)
-            x_validation = x_validation.reshape(x_validation.shape[0], img_rows * img_cols * channels)
-            input_shape = channels * img_rows * img_cols
+    x_train_image = x_train_image.reshape(x_train_image.shape[0], img_rows, img_cols, channels)
+    x_validation_image = x_validation_image.reshape(x_validation_image.shape[0], img_rows, img_cols, channels)
+    input_shape = (img_rows, img_cols, channels)
 
     # for DEBUG
     # print('x shape:', x_train.shape)
@@ -263,9 +220,12 @@ if __name__ == '__main__':
     # print(x_train.shape[0], 'train samples')
 
     # img_model = create_model(model_name, input_shape, 'rmse')
+    # input_1 = Input(shape=input_shape, name="design_image")
+    # input_2 = Input(shape=(2,), name="ab")
+
     conv = Sequential()
 
-    conv.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape, use_bias=False))
+    conv.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=input_shape, use_bias=False))
     conv.add(Activation('relu'))
     conv.add(MaxPooling2D(pool_size=(2, 2)))
     conv.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False))
@@ -282,7 +242,7 @@ if __name__ == '__main__':
     conv.add(Dropout(0.4))
 
     fc_model = Sequential()
-    fc_model.add(Dense(2, input_shape=(2,), activation='sigmoid'))
+    fc_model.add(Dense(2, input_shape=(2,), activation='relu'))
 
     model = Concatenate([conv, fc_model])
     model.add(Dense(4, activation='sigmoid'))
@@ -301,17 +261,26 @@ if __name__ == '__main__':
 
     if model_name.startswith('cnn') or model_name.startswith('nn'):
         tic()
-        history = model.fit(x_train, y_train,
+        history = model.fit([x_train_image, x_train_col], y_train,
                             batch_size=batch_size,
                             epochs=epochs,
                             # pass validtation for monitoring
                             # validation loss and metrics
-                            validation_data=(x_validation, y_validation),
+                            validation_data=([x_validation_image, x_validation_col], y_validation),
                             callbacks=[reduce_lr, stopping])
         toc()
-        score = model.evaluate(x_train, y_train, verbose=0)
+        score = model.evaluate([x_train_image, x_train_col], y_train, verbose=0)
+        y_train_pred = model.predict([x_train_image, x_train_col])
         print('Train loss:', score[0])
         print('Train accuracy:', score[1])
+        print('Train R-squared', r2_score(y_train, y_train_pred))
+        print("%s: %.2f%%" % (model.metrics_names[1], score[1] * 100))
+
+        test_score = model.evaluate([x_test_image, x_test], y_test, verbose=0)
+        y_test_pred = model.predict([x_test_image, x_test])
+        print('Test loss:', test_score[0])
+        print('Test accuracy:', test_score[1])
+        print('Test R-squared', r2_score(y_test, y_test_pred))
         print("%s: %.2f%%" % (model.metrics_names[1], score[1] * 100))
 
         # serialize model to JSON
