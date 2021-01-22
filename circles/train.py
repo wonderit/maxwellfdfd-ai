@@ -13,6 +13,9 @@ import os
 from sklearn.externals import joblib
 from sklearn.metrics import r2_score
 
+def rmse(y_true, y_pred):
+	return K.sqrt(K.mean(K.square(y_pred - y_true), axis=-1))
+
 def tic():
     import time
     global startTime_for_tictoc
@@ -142,14 +145,12 @@ IMAGE_FILE_PATH = "../../data/image_data.npz"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", help="Select model type.", default="cnn")
-    parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)",
-                        default='mse')
+    parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default='rmse')
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", default=0.001)
     parser.add_argument("-e", "--epochs", help="Set epochs", default=50)
     parser.add_argument("-b", "--batch_size", help="Set batch size", default=128)
     parser.add_argument("-n", "--is_normalized", help="Set is Normalized", action='store_true')
-    parser.add_argument("-d", "--data_type", help="Select data type.. (train, valid, test)",
-                        default='train')
+    parser.add_argument("-d", "--data_type", help="Select data type.. (train, valid, test)", default='train')
     # arg for testing parameters
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
 
@@ -182,6 +183,13 @@ if __name__ == '__main__':
     x_test_image = image_data['xtest']
     y_test = image_data['ytest']
 
+
+    if args.unit_test:
+        print('unit_test start')
+        n_train = 1000
+        x_train_val_image = x_train_val_image[:n_train]
+        ytrain = ytrain[:n_train]
+
     # Binarize Image
     # binarized = 1.0 * (img > threshold)
     x_train_val_image = 1.0 * (x_train_val_image > 0)
@@ -204,16 +212,6 @@ if __name__ == '__main__':
     x_validation_col = x_train[valid_idx]
     x_validation_image = x_train_val_image[valid_idx]
     y_validation = ytrain[valid_idx]
-
-    if args.unit_test:
-        print('unit_test start')
-        x_train_col = x_train_col[:1000]
-        x_train_image = x_train_image[:1000]
-        y_train = y_train[:1000]
-
-        x_validation_col = x_validation_col[:1000]
-        x_validation_image = x_validation_image[:1000]
-        y_validation = y_validation[:1000]
 
     print('Data Split Finished.')
     print(K.image_data_format())
@@ -271,7 +269,7 @@ if __name__ == '__main__':
     model = Model([input_1, input_2], output)
     # model.add(Dense(4, activation='sigmoid'))
 
-    model.compile(loss=loss_functions, optimizer=Adam(lr=args.learning_rate), metrics=['accuracy'])
+    model.compile(loss=rmse, optimizer=Adam(lr=args.learning_rate), metrics=[rmse])
 
     # add reduce_lr, earlystopping
     stopping = keras.callbacks.EarlyStopping(patience=8)
