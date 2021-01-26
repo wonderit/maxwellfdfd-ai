@@ -1,8 +1,7 @@
-
 from math import sqrt
 import pandas as pd
 from keras import backend as K
-from keras.models import model_from_json
+from keras.models import load_model
 from sklearn.externals import joblib
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
@@ -11,9 +10,11 @@ import matplotlib.pyplot as plt
 import os
 # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
+def rmse(y_true, y_pred):
+	return K.sqrt(K.mean(K.square(y_pred - y_true)))
 
 def root_mean_squared_error(y_true, y_pred):
-    return K.sqrt(K.mean(K.square(y_pred - y_true), axis=-1))
+    return K.sqrt(K.mean(K.square(y_pred - y_true)))
 
 def tic():
     import time
@@ -40,8 +41,8 @@ def rescale(arr, std, mean):
     return arr
 
 model_name_details = [
-    'cnn_128_50/mse_1',
-    'cnn_128_50/rmse_1'
+    'cnn_input_a_tr-te_30000-3000_128_50_lr0.001/rmse-ep15-val0.0537.hdf5',
+    # 'cnn_128_50/rmse_1'
 ]
 
 model_folder_path = 'models_blue'
@@ -89,7 +90,7 @@ x_test_image = 1.0 * (x_test_image > 0)
 
 # get input columns
 # x_train = train_data[:, :2]
-x_test = test_data[:, :2]
+x_test = test_data[:, :1]
 
 # shuffled_indices = np.random.permutation(n_train)
 # train_size = int(n_train * 0.75)
@@ -135,15 +136,16 @@ for i, model_name_detail in enumerate(model_name_details):
     runningTime = 0
     if model_name_detail.startswith('cnn') or model_name_detail.startswith('nn'):
         parsed_model_name = model_name_detail.split('/')[0] + '_' + model_name_detail.split('/')[1]
-        MODEL_JSON_PATH = '{}/{}.json'.format(model_folder_path, model_name_detail)
-        MODEL_H5_PATH = '{}/{}.h5'.format(model_folder_path, model_name_detail)
+        # MODEL_JSON_PATH = '{}/{}.json'.format(model_folder_path, model_name_detail)
+        MODEL_H5_PATH = '{}/{}'.format(model_folder_path, model_name_detail)
         # load json and create model
-        json_file = open(MODEL_JSON_PATH, 'r')
-        loaded_model_json = json_file.read()
-        json_file.close()
-        loaded_model = model_from_json(loaded_model_json)
+        # json_file = open(MODEL_JSON_PATH, 'r')
+        # loaded_model_json = json_file.read()
+        # json_file.close()
+        # loaded_model = model_from_json(loaded_model_json)
         # load weights into new model
-        loaded_model.load_weights(MODEL_H5_PATH)
+        # loaded_model.load_weights(MODEL_H5_PATH)
+        loaded_model = load_model(MODEL_H5_PATH, compile=False)
         print("Loaded model from disk")
 
         if model_name_detail.startswith('cnn'):
@@ -165,6 +167,7 @@ for i, model_name_detail in enumerate(model_name_details):
         # rmse = root_mean_squared_error(y_test_compressed, y_predict)
 
     # corr = np.corrcoef(y_test, y_predict)[0, 1]
+    print('y_shape', y_test.shape, 'y_predict shape', y_predict.shape)
     r2 = r2_score(y_test, y_predict)
 
     meanSquaredError = mean_squared_error(y_test, y_predict)
@@ -181,6 +184,7 @@ for i, model_name_detail in enumerate(model_name_details):
     result_rmse[parsed_model_name] = rmse
     result_runningTime[parsed_model_name] = runningTime
 
+    plt.scatter(y_predict, y_test, s=3, alpha=0.5, label='all', marker='+')
     # x_margin = -0.05
     x_margin = 0
     plt.text(x_margin, 1, 'R² = %0.4f' % r2)
