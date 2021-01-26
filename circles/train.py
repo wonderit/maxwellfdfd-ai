@@ -95,6 +95,7 @@ if __name__ == '__main__':
     parser.add_argument("-oe", "--is_ordinal_encoding", help="flag for ordinal encoding 'a'", action='store_true')
     parser.add_argument("-oh", "--is_onehot_encoding", help="flag for onehot encoding 'a'", action='store_true')
     parser.add_argument("-g", "--is_global_average_pooling", help="is global average pooling", action='store_true')
+    parser.add_argument("-mh", "--is_multiple_height", help="is height adjustable", action='store_true')
 
 
     args = parser.parse_args()
@@ -133,31 +134,13 @@ if __name__ == '__main__':
 
     # split train/valid image
     ##TODO
-    # x_train_val_image = image_data['xtrain']
-    y_train = image_data['ytrain']
+    # # x_train_val_image = image_data['xtrain']
+    # y_train = image_data['ytrain']
+    #
+    # x_test_image = image_data['xtest']
+    # y_test = image_data['ytest']
 
-    x_test_image = image_data['xtest']
-    y_test = image_data['ytest']
 
-
-    if args.unit_test:
-        print('unit_test start')
-        n_train = 1000
-        n_test = 100
-    else:
-        print('Training Start. (Train/Test)=({}/{})'.format(args.n_train, args.n_test))
-        n_train = args.n_train
-        n_test = args.n_test
-
-    # resample train
-    x_train_val_image = x_train_val_image[:n_train]
-    y_train = y_train[:n_train]
-    train_data = train_data[:n_train, :]
-
-    # resample test
-    x_test_image = x_test_image[:n_test]
-    y_test = y_test[:n_test]
-    test_data = test_data[:n_test]
 
     # Binarize Image
     # binarized = 1.0 * (img > threshold)
@@ -174,6 +157,50 @@ if __name__ == '__main__':
     x_test = test_data[:, :1]
     intput_column_size = x_test.shape[1]
     print('x_train data after', x_test.shape)
+
+    if not args.is_multiple_height:
+        print('Input Image has same Height')
+        train_indices = []
+        test_indices = []
+        for i in range(x_train_val_image.shape[0]):
+            if x_train_val_image[i][0][0] == 1.0:
+                train_indices.append(True)
+            else:
+                train_indices.append(False)
+        for j in range(x_test_image.shape[0]):
+            if x_test_image[j][0][0] == 1.0:
+                test_indices.append(True)
+            else:
+                test_indices.append(False)
+
+        x_train_val_image = x_train_val_image[train_indices, :, :]
+        y_train = y_train[train_indices]
+        x_test_image = x_test_image[test_indices, :, :]
+        y_test = y_test[test_indices]
+
+        x_train = x_train[train_indices, :]
+        x_test = x_test[test_indices, :]
+    # args.n_train = 30000
+    # args.n_test = 3000
+    if args.unit_test:
+        print('unit_test start')
+        n_train = 1000
+        n_test = 100
+    else:
+        print('Training Start. (Train/Test)=({}/{})'.format(args.n_train, args.n_test))
+        n_train = args.n_train
+        n_test = args.n_test
+
+    # resample train
+    x_train_val_image = x_train_val_image[:n_train]
+    y_train = y_train[:n_train]
+    x_train = x_train[:n_train, :]
+
+    # resample test
+    x_test_image = x_test_image[:n_test]
+    y_test = y_test[:n_test]
+    x_test = x_test[:n_test]
+
 
     output_activation = 'sigmoid'
     # y1, y2, y3, y4 normalize
@@ -227,16 +254,16 @@ if __name__ == '__main__':
 
     r = Conv2D(16, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(struct_input)
     r = MaxPooling2D(pool_size=(2, 2))(r)
-    r = Dropout(0.25)(r)
+    # r = Dropout(0.25)(r)
     r = Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(r)
     r = MaxPooling2D(pool_size=(2, 2))(r)
-    r = Dropout(0.25)(r)
+    # r = Dropout(0.25)(r)
     r = Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(r)
     r = MaxPooling2D(pool_size=(2, 2))(r)
-    r = Dropout(0.25)(r)
+    # r = Dropout(0.25)(r)
     r = Conv2D(64, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(r)
     r = MaxPooling2D(pool_size=(2, 2))(r)
-    r = Dropout(0.25)(r)
+    # r = Dropout(0.25)(r)
     if args.is_global_average_pooling:
         feature_output = GlobalAveragePooling2D()(r)
     else:

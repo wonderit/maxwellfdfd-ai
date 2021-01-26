@@ -69,7 +69,7 @@ pandas-1.2.0-cp37-cp37m-manylinux1_x86_64.whl
 source py3-maxwellfdfd/bin/activate
 module load cuda10.0 cudnn_v7.6.1_cuda10.0
 ```
-
+ train.py -m cnn_single -tr 30000 -te 3000 -oe -oh
  
 # Run script 
 
