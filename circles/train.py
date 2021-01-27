@@ -14,6 +14,7 @@ from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 from sklearn.externals import joblib
 from sklearn.metrics import r2_score
 
+
 def rmse(y_true, y_pred):
 	return K.sqrt(K.mean(K.square(y_pred - y_true)))
 
@@ -22,6 +23,7 @@ def tic():
     import time
     global startTime_for_tictoc
     startTime_for_tictoc = time.time()
+
 
 def toc():
     import time
@@ -129,8 +131,6 @@ if __name__ == '__main__':
     n_test = image_data['ytest'].shape[0]
 
     # csv data train/test split
-    # train_data = csv_data[:n_train].to_numpy()
-    # test_data = csv_data[n_train:].to_numpy()
     train_data = csv_train_data.to_numpy()
     test_data = csv_test_data.to_numpy()
 
@@ -141,8 +141,6 @@ if __name__ == '__main__':
     #
     # x_test_image = image_data['xtest']
     # y_test = image_data['ytest']
-
-
 
     # Binarize Image
     # binarized = 1.0 * (img > threshold)
@@ -182,8 +180,6 @@ if __name__ == '__main__':
 
         x_train = x_train[train_indices, :]
         x_test = x_test[test_indices, :]
-    # args.n_train = 30000
-    # args.n_test = 3000
     if args.unit_test:
         print('unit_test start')
         n_train = 1000
@@ -202,7 +198,6 @@ if __name__ == '__main__':
     x_test_image = x_test_image[:n_test]
     y_test = y_test[:n_test]
     x_test = x_test[:n_test]
-
 
     output_activation = 'sigmoid'
     # y1, y2, y3, y4 normalize
@@ -244,14 +239,8 @@ if __name__ == '__main__':
     input_shape = (img_rows, img_cols, channels)
 
     print('Image data reshaping finished')
-    # for DEBUG
-    # print('x shape:', x_train.shape)
-    # print('y shape:', y_train.shape)
-    # print(x_train.shape[0], 'train samples')
 
-    # img_model = create_model(model_name, input_shape, 'rmse')
     struct_input = Input(shape=input_shape, name="design_image")
-    # input_2 = Input(shape=(2,), name="ab")
     wave_input = Input(shape=(intput_column_size,), name="wavelength")
 
     r = Conv2D(16, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(struct_input)
@@ -273,8 +262,7 @@ if __name__ == '__main__':
     # add dense after flatten
     # feature_output = Dense(1024, activation='relu')(feature_output)
     concat = concatenate([feature_output, wave_input])
-    tr = Dense(2048, activation='relu')(
-        concat)
+    tr = Dense(2048, activation='relu')(concat)
     tr = Dropout(0.4)(tr)
     tr = Dense(1024, activation='relu')(tr)
     tr = Dense(256, activation='relu')(tr)
@@ -284,54 +272,6 @@ if __name__ == '__main__':
     model = Model([struct_input, wave_input], tr_output)
     # model.compile(loss=loss_function, optimizer=Adam(lr=learn_rate), metrics=['mae', r2])
 
-    #
-    # conv = Sequential()
-    #
-    # conv.add(Conv2D(16, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu', input_shape=input_shape))
-    # conv.add(MaxPooling2D(pool_size=(2, 2)))
-    # # conv.add(Dropout(0.25))
-    #
-    # conv.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu'))
-    # conv.add(MaxPooling2D(pool_size=(2, 2)))
-    # # conv.add(Dropout(0.25))
-    #
-    # conv.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu'))
-    # conv.add(MaxPooling2D(pool_size=(2, 2)))
-    #
-    # conv.add(Conv2D(64, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu'))
-    # conv.add(MaxPooling2D(pool_size=(2, 2)))
-    # conv.add(Flatten())
-    # # conv.add(Dense(128, activation='relu'))
-    # # conv.add(Dropout(0.4))
-    #
-    # concat = concatenate([conv, fc_output])
-    # fc_model = Sequential()
-    # fc_model.add(Dense(2048, input_shape=(1,), activation='relu'))
-    # fc_model.add(Dropout(0.4))
-    # fc_model.add(Dense(1024, activation='relu'))
-    # fc_model.add(Dense(256, activation='relu'))
-    # fc_model.add(Dense(64, activation='relu'))
-    # fc_model.add(Dense(16, activation='relu'))
-    # print('conv summary')
-    # conv.summary()
-    # print('fc_model summary')
-    # fc_model.summary()
-    # # exit()
-    # conv_output = conv(input_1)
-    # fc_output = fc_model(input_2)
-    # print('conv_output shape : {}, fc_output shape: {}'.format(conv_output.shape, fc_output.shape))
-    #
-    # # concat = Concatenate()([conv_output, fc_output])
-    # print('concat output shape: {}'.format(concat.shape))
-    # concat = Concatenate()([conv_output, fc_output])
-    # dense_layer = Dense(512, activation='relu')(concat)
-    # dense_layer = Dropout(0.5)(dense_layer)
-
-    # dense_layer = Dense(128, activation='relu')(concat)
-    # output = Dense(4, activation='sigmoid')(dense_layer)
-    #
-    # model = Model([input_1, input_2], outputs=[output])
-    # model.add(Dense(4, activation='sigmoid'))
     model.summary()
 
     model.compile(loss=rmse, optimizer=Adam(lr=args.learning_rate), metrics=[rmse])
@@ -370,16 +310,10 @@ if __name__ == '__main__':
         history = model.fit([x_train_val_image, x_train], y_train,
                             batch_size=batch_size,
                             epochs=epochs,
-                            validation_split=0.2,
+                            validation_split=0.1,
                             shuffle=True,
                             callbacks=[reduce_lr, mc, stopping])
-        # history = model.fit([x_train_image, x_train_col], y_train,
-        #                     batch_size=batch_size,
-        #                     epochs=epochs,
-        #                     # pass validtation for monitoring
-        #                     # validation loss and metrics
-        #                     validation_data=([x_validation_image, x_validation_col], y_validation),
-        #                     callbacks=[reduce_lr, stopping])
+
         toc()
         score = model.evaluate([x_train_val_image, x_train], y_train, verbose=0)
         y_train_pred = model.predict([x_train_val_image, x_train])
@@ -394,22 +328,6 @@ if __name__ == '__main__':
         print('Test accuracy:', test_score[1])
         print('Test R-squared', r2_score(y_test, y_test_pred))
         print("%s: %.2f%%" % (model.metrics_names[1], score[1] * 100))
-
-        # serialize model to JSON
-        # model_json = model.to_json()
-        # model_export_path_folder = 'models_blue/{}_{}_{}_lr{}'.format(model_name, batch_size, epochs, args.learning_rate)
-        # if not os.path.exists(model_export_path_folder):
-        #     os.makedirs(model_export_path_folder)
-        #
-        # model_export_path_template = '{}/{}_1.{}'
-        # model_export_path = model_export_path_template.format(model_export_path_folder, loss_functions, 'json')
-        # with open(model_export_path, "w") as json_file:
-        #     json_file.write(model_json)
-        #
-        # # serialize weights to HDF5
-        # model.save_weights(
-        #     model_export_path_template.format(model_export_path_folder, loss_functions, 'h5'))
-        # print("Saved model to disk")
 
         # Loss
         plt.plot(history.history['loss'])
@@ -433,4 +351,3 @@ if __name__ == '__main__':
         model_export_path = model_export_path_template.format(model_export_path_folder, loss_functions)
         joblib.dump(model, model_export_path)
         print("Saved model to disk")
-
