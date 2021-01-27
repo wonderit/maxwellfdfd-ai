@@ -121,10 +121,10 @@ def compress_image(prev_image, n):
     return new_image
 
 
-def create_model(model_type, model_input_shape, loss_function, iteration = 0, weight_decay_factor=0):
+def create_model(model_type, model_input_shape, loss_function, iteration=0, weight_decay_factor=0):
 
     if model_type.startswith('cnn'):
-        conv_l2 = weight_decay_factor * (1 - iteration)
+        conv_l2 = weight_decay_factor - args.weight_schedule_factor * iteration
         if conv_l2 > 0:
             print('Weight Decay Scheduling activated : lamda={}'.format(conv_l2))
         model = Sequential()
@@ -310,7 +310,8 @@ if __name__ == '__main__':
     parser.add_argument("-dm", "--is_different_models", action='store_true')
 
     # arg for weight decay scheduling
-    parser.add_argument("-ws", "--weight_decay", type=float, default=0.0)
+    parser.add_argument("-ws", "--weight_scheduling_factor", type=float, default=0.0)
+    parser.add_argument("-wd", "--weight_decay_factor", type=float, default=0.0)
 
 
     args = parser.parse_args()
@@ -622,7 +623,7 @@ if __name__ == '__main__':
                     input_shape = channels * img_rows * img_cols
 
                 tic()
-                model = create_model(model_name, input_shape, custom_loss.custom_loss, i, args.weight_decay)
+                model = create_model(model_name, input_shape, custom_loss.custom_loss, i, args.weight_decay_factor)
 
                 mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min',
                                                      save_best_only=True)
