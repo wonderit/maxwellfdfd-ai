@@ -312,6 +312,7 @@ if __name__ == '__main__':
     # arg for weight decay scheduling
     parser.add_argument("-ws", "--weight_schedule_factor", type=float, default=0.0)
     parser.add_argument("-wd", "--weight_decay_factor", type=float, default=0.0)
+    parser.add_argument("-rm", "--remember_model", action='store_true')
 
 
     args = parser.parse_args()
@@ -543,6 +544,7 @@ if __name__ == '__main__':
 
     result_train_progress_path_template = '{}/train_progress/{}'
 
+    prev_model = None
     for i in range(ITERATION):
 
         print('Training Iteration : {}'.format(i+1))
@@ -626,6 +628,11 @@ if __name__ == '__main__':
                 tic()
                 model = create_model(model_name, input_shape, custom_loss.custom_loss, i, args.weight_decay_factor)
 
+                # Initialize weights
+                if args.remember_model:
+                    print('Initializing model with previous model 0')
+                    model.set_weights(prev_model.get_weights())
+
                 mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min',
                                                      save_best_only=True)
                 history = model.fit(input_L_x, L_y,
@@ -698,6 +705,8 @@ if __name__ == '__main__':
                 #                                                       input_shape_type, (i+1))
                 # joblib.dump(model, model_export_path)
                 # print("Saved model to disk")
+            if args.remember_model and m == 0:
+                prev_model = model
 
             if not args.is_active_random and args.is_active_learning:
                 resized_U_x = U_x
