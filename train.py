@@ -507,7 +507,7 @@ if __name__ == '__main__':
     # custom_loss = CustomLoss(loss_functions)
 
     # add reduce_lr, earlystopping
-    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=2, patience=8)
+    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', verbose=2, patience=8)
 
     reduce_lr = keras.callbacks.ReduceLROnPlateau(
         factor=0.1,
