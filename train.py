@@ -125,6 +125,8 @@ def create_model(model_type, model_input_shape, loss_function, iteration = 0, we
 
     if model_type.startswith('cnn'):
         conv_l2 = weight_decay_factor * (1 - iteration)
+        if conv_l2 > 0:
+            print('Weight Decay Scheduling activated : lamda={}'.format(conv_l2))
         model = Sequential()
         model.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape, use_bias=False, kernel_regularizer=l2(conv_l2)))
         model.add(Activation('relu'))
