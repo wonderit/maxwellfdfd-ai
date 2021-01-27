@@ -57,6 +57,8 @@ def compress_image(prev_image, n):
             new_image[i, j] = prev_image[n * i, n * j]
     return new_image
 
+# CPU TEST
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
