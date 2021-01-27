@@ -310,7 +310,7 @@ if __name__ == '__main__':
     parser.add_argument("-dm", "--is_different_models", action='store_true')
 
     # arg for weight decay scheduling
-    parser.add_argument("-ws", "--weight_scheduling_factor", type=float, default=0.0)
+    parser.add_argument("-ws", "--weight_schedule_factor", type=float, default=0.0)
     parser.add_argument("-wd", "--weight_decay_factor", type=float, default=0.0)
 
 
