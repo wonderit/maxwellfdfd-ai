@@ -629,7 +629,7 @@ if __name__ == '__main__':
                 model = create_model(model_name, input_shape, custom_loss.custom_loss, i, args.weight_decay_factor)
 
                 # Initialize weights
-                if args.remember_model:
+                if args.remember_model and prev_model is not None:
                     print('Initializing model with previous model 0')
                     model.set_weights(prev_model.get_weights())
 
@@ -706,6 +706,7 @@ if __name__ == '__main__':
                 # joblib.dump(model, model_export_path)
                 # print("Saved model to disk")
             if args.remember_model and m == 0:
+                print('ITERATION : {}, prev model updated'.format(i))
                 prev_model = model
 
             if not args.is_active_random and args.is_active_learning:
