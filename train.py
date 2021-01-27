@@ -19,9 +19,9 @@ from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, GradientBoostingRegressor, AdaBoostRegressor
 from sklearn.svm import SVR
-from sklearn.externals import joblib
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
+from keras.regularizers import l2
 
 
 class CustomLoss:
@@ -121,25 +121,27 @@ def compress_image(prev_image, n):
     return new_image
 
 
-def create_model(model_type, model_input_shape, loss_function):
+def create_model(model_type, model_input_shape, loss_function, iteration = 0, weight_decay_factor=0):
+
     if model_type.startswith('cnn'):
+        conv_l2 = weight_decay_factor * (1 - iteration)
         model = Sequential()
-        model.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape, use_bias=False))
+        model.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape, use_bias=False, kernel_regularizer=l2(conv_l2)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False))
+        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, kernel_regularizer=l2(conv_l2)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False))
+        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, kernel_regularizer=l2(conv_l2)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False))
+        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, kernel_regularizer=l2(conv_l2)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(1024, activation='relu'))
+        model.add(Dense(1024, activation='relu', kernel_regularizer=l2(conv_l2), bias_regularizer=l2(conv_l2)))
         model.add(Dropout(0.4))
-        model.add(Dense(24, activation='sigmoid'))
+        model.add(Dense(24, activation='sigmoid', kernel_regularizer=l2(conv_l2), bias_regularizer=l2(conv_l2)))
         model.compile(loss=loss_function, optimizer=Adam(lr=args.learning_rate), metrics=['accuracy'])
     elif model_type.startswith('rf'):
         regr = RandomForestRegressor(n_estimators=100, max_depth=30)
@@ -304,6 +306,9 @@ if __name__ == '__main__':
     # arg for rpo lossfunction
     parser.add_argument("-dl", "--is_different_losses", action='store_true')
     parser.add_argument("-dm", "--is_different_models", action='store_true')
+
+    # arg for weight decay scheduling
+    parser.add_argument("-ws", "--weight_decay", type=float, default=0.0)
 
 
     args = parser.parse_args()
@@ -615,7 +620,7 @@ if __name__ == '__main__':
                     input_shape = channels * img_rows * img_cols
 
                 tic()
-                model = create_model(model_name, input_shape, custom_loss.custom_loss)
+                model = create_model(model_name, input_shape, custom_loss.custom_loss, i, args.weight_decay)
 
                 mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min',
                                                      save_best_only=True)
