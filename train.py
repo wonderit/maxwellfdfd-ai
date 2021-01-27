@@ -290,7 +290,7 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)",
                         default='rmse')
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
-    parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=100)
+    parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=50)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
     # arg for AL
@@ -506,11 +506,12 @@ if __name__ == '__main__':
     # custom_loss = CustomLoss(loss_functions)
 
     # add reduce_lr, earlystopping
-    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', patience=8)
+    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=2, patience=8)
 
     reduce_lr = keras.callbacks.ReduceLROnPlateau(
         factor=0.1,
         patience=2,
+        verbose=2,
         min_lr=args.learning_rate * 0.001)
 
     ITERATION = args.iteration
