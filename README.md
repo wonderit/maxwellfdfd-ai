@@ -70,6 +70,9 @@ source py3-maxwellfdfd/bin/activate
 module load cuda10.0 cudnn_v7.6.1_cuda10.0
 ```
  train.py -m cnn_single -tr 30000 -te 3000 -oe -oh
+
+user.sub q=shr_gpu ngpu=1 gputype=titan info=tensorflow jname=0127Fhrmse ~/jsh2/bin/python ~/0Surr_model/1224SurrModel-real-h.py
+user.sub q=shr_gpu ngpu=1 gputype=titan info=tensorflow jname=
  
 # Run script 
 
