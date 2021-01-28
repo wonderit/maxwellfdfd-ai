@@ -72,8 +72,10 @@ module load cuda10.0 cudnn_v7.6.1_cuda10.0
  train.py -m cnn_single -tr 30000 -te 3000 -oe -oh
 
 user.sub q=shr_gpu ngpu=1 gputype=titan info=tensorflow jname=0127Fhrmse ~/jsh2/bin/python ~/0Surr_model/1224SurrModel-real-h.py
-user.sub q=shr_gpu ngpu=1 gputype=titan info=tensorflow jname=
- 
+user.sub q=shr_gpu ngpu=1 gputype=titan info=tensorflow jname=cnn_raw_rmse ../py3-maxwell/bin/python train.py -tr -1 -te -1 -m cnn_raw_rmse 
+ bjobs, bstop, bkill
+
+
 # Run script 
 
 * Train

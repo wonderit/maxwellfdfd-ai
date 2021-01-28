@@ -2,8 +2,9 @@ import pandas as pd
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input, GlobalAveragePooling2D
 from keras.layers import Conv2D, MaxPooling2D, concatenate
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD
 import keras
+import tensorflow_addons as tfa
 import matplotlib.pyplot as plt
 from keras import backend as K
 import tensorflow as tf
@@ -18,6 +19,22 @@ from sklearn.metrics import r2_score
 def rmse(y_true, y_pred):
 	return K.sqrt(K.mean(K.square(y_pred - y_true)))
 
+
+class CustomLoss:
+    def __init__(self, _loss_function):
+        super(CustomLoss, self).__init__()
+        self.loss_function_array = _loss_function.split(',')
+
+    def custom_loss(self, y_true, y_pred):
+        loss = 0
+
+        if 'mse' in self.loss_function_array:
+            loss = loss + K.mean(K.square(y_pred - y_true))
+
+        if 'rmse' in self.loss_function_array:
+            loss = loss + K.sqrt(K.mean(K.square(y_pred - y_true)))
+
+        return loss
 
 def tic():
     import time
@@ -76,9 +93,12 @@ if gpus:
 
 
 ## TRAIN
-CSV_TRAIN_FILE_PATH = "./data/aby_full_0125_train_(107982, 5).csv"
-CSV_TEST_FILE_PATH = "./data/aby_full_0125_test_(11999, 5).csv"
-IMAGE_FILE_PATH = "./data/imaged_h_Xdata_(119981,160,160).npz"
+# CSV_TRAIN_FILE_PATH = "./data/aby_full_0125_train_(107982, 5).csv"
+# CSV_TEST_FILE_PATH = "./data/aby_full_0125_test_(11999, 5).csv"
+# IMAGE_FILE_PATH = "./data/imaged_h_Xdata_(119981,160,160).npz"
+TRAIN_DATA_PATH = "./data/wv_image_train_0128_(77684,160,160).npz"
+VALIDATION_DATA_PATH = "./data/wv_image_val_0128_(9711,160,160).npz"
+TEST_DATA_PATH = "./data/wv_image_test_0128_(9711,160,160).npz"
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -100,7 +120,9 @@ if __name__ == '__main__':
     parser.add_argument("-oh", "--is_onehot_encoding", help="flag for onehot encoding 'a'", action='store_true')
     parser.add_argument("-g", "--is_global_average_pooling", help="is global average pooling", action='store_true')
     parser.add_argument("-mh", "--is_multiple_height", help="is height adjustable", action='store_true')
+    parser.add_argument("-da", "--data_augmentation", help="add augmentation", action='store_true')
 
+    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
 
     args = parser.parse_args()
     model_name = args.model
@@ -111,36 +133,37 @@ if __name__ == '__main__':
     # TEST
     # args.unit_test = True
 
-    print('CSV Data Loading....')
-    csv_train_data = pd.read_csv(CSV_TRAIN_FILE_PATH)
-    csv_test_data = pd.read_csv(CSV_TEST_FILE_PATH)
-    print('CSV Data Loading finished (shape : train/test : {}/{})'.format(csv_train_data.shape, csv_test_data.shape))
+    print('Train, Valid, Test Data Loading....')
 
-    print('image data loading...')
-    image_data = np.load(IMAGE_FILE_PATH)
-    print('image data loaded')
+    if args.unit_test:
 
-    x_train_val_image = image_data['xtrain']
-    y_train = image_data['ytrain']
+        TRAIN_DATA_PATH = "./data/wv_image_val_0128_(9711,160,160).npz"
 
-    x_test_image = image_data['xtest']
-    y_test = image_data['ytest']
+    if args.data_augmentation:
+        print('use data augmentation (trainset * 2)')
+        TRAIN_DATA_PATH = "./data/wv_image_train_total_0128_(155316,160,160).npz"
+
+    train_data = np.load(TRAIN_DATA_PATH)
+    validation_data = np.load(VALIDATION_DATA_PATH)
+    test_data = np.load(TEST_DATA_PATH)
+
+    x_train_image = train_data['image']
+    x_train = train_data['wv']
+    y_train = train_data['y']
+
+    x_validation_image = validation_data['image']
+    x_validation = validation_data['wv']
+    y_validation = validation_data['y']
+
+    x_test_image = test_data['image']
+    x_test = test_data['wv']
+    y_test = test_data['y']
+    print('Train, Valid, Test Data Loading finished (shape : train/valid/test > {}/{}/{})'.format(len(y_train), len(y_validation), len(y_test)))
 
     # of train, test set
-    n_train = image_data['ytrain'].shape[0]
-    n_test = image_data['ytest'].shape[0]
-
-    # csv data train/test split
-    train_data = csv_train_data.to_numpy()
-    test_data = csv_test_data.to_numpy()
-
-    # split train/valid image
-    ##TODO
-    # # x_train_val_image = image_data['xtrain']
-    # y_train = image_data['ytrain']
-    #
-    # x_test_image = image_data['xtest']
-    # y_test = image_data['ytest']
+    n_train = len(y_train)
+    n_validation = len(y_validation)
+    n_test = len(y_test)
 
     # Binarize Image
     # binarized = 1.0 * (img > threshold)
@@ -148,38 +171,45 @@ if __name__ == '__main__':
     # x_test_image = 1.0 * (x_test_image > 0)
 
     # preprocess image
-    x_train_val_image = x_train_val_image / 116.0
+    x_train_image = x_train_image / 116.0
+    x_validation_image = x_validation_image / 116.0
     x_test_image = x_test_image / 116.0
 
+    # resize input column
+    x_train = x_train.reshape(-1, 1)
+    x_validation = x_validation.reshape(-1, 1)
+    x_test = x_test.reshape(-1, 1)
+
     # get input columns
-    print('x_train data before', train_data.shape)
-    x_train = train_data[:, :1]
-    x_test = test_data[:, :1]
-    intput_column_size = x_test.shape[1]
-    print('x_train data after', x_test.shape)
+    # x_train = train_data[:, :1]
+    # x_test = test_data[:, :1]
+    # intput_column_size = x_test.shape[1]
+    input_column_size = x_train.shape[1]
+    print('x_test data after', x_test.shape)
 
-    if not args.is_multiple_height:
-        print('Input Image has same Height')
-        train_indices = []
-        test_indices = []
-        for i in range(x_train_val_image.shape[0]):
-            if x_train_val_image[i][0][0] == 1.0:
-                train_indices.append(True)
-            else:
-                train_indices.append(False)
-        for j in range(x_test_image.shape[0]):
-            if x_test_image[j][0][0] == 1.0:
-                test_indices.append(True)
-            else:
-                test_indices.append(False)
+    # if not args.is_multiple_height:
+    #     print('Input Image has same Height')
+    #     train_indices = []
+    #     test_indices = []
+    #     for i in range(x_train_val_image.shape[0]):
+    #         if x_train_val_image[i][0][0] == 1.0:
+    #             train_indices.append(True)
+    #         else:
+    #             train_indices.append(False)
+    #     for j in range(x_test_image.shape[0]):
+    #         if x_test_image[j][0][0] == 1.0:
+    #             test_indices.append(True)
+    #         else:
+    #             test_indices.append(False)
+    #
+    #     x_train_val_image = x_train_val_image[train_indices, :, :]
+    #     y_train = y_train[train_indices]
+    #     x_test_image = x_test_image[test_indices, :, :]
+    #     y_test = y_test[test_indices]
+    #
+    #     x_train = x_train[train_indices, :]
+    #     x_test = x_test[test_indices, :]
 
-        x_train_val_image = x_train_val_image[train_indices, :, :]
-        y_train = y_train[train_indices]
-        x_test_image = x_test_image[test_indices, :, :]
-        y_test = y_test[test_indices]
-
-        x_train = x_train[train_indices, :]
-        x_test = x_test[test_indices, :]
     if args.unit_test:
         print('unit_test start')
         n_train = 1000
@@ -189,15 +219,19 @@ if __name__ == '__main__':
         n_train = args.n_train
         n_test = args.n_test
 
-    # resample train
-    x_train_val_image = x_train_val_image[:n_train]
-    y_train = y_train[:n_train]
-    x_train = x_train[:n_train, :]
+    if n_train > 0:
+        # resample x image
+        x_train_image = x_train_image[:n_train]
+        x_train = x_train[:n_train, :]
+        y_train = y_train[:n_train]
 
-    # resample test
-    x_test_image = x_test_image[:n_test]
-    y_test = y_test[:n_test]
-    x_test = x_test[:n_test]
+    if n_test > 0:
+        x_validation_image = x_validation_image[:n_test]
+        x_test_image = x_test_image[:n_test]
+        y_validation = y_validation[:n_test]
+        y_test = y_test[:n_test]
+        x_validation = x_validation[:n_test, :]
+        x_test = x_test[:n_test, :]
 
     output_activation = 'sigmoid'
     # y1, y2, y3, y4 normalize
@@ -213,35 +247,35 @@ if __name__ == '__main__':
         print('ordinal encoding for A start! ')
         ordinal_encoder = OrdinalEncoder()
 
-        ordinal_encoder.fit(x_test)
+        ordinal_encoder.fit(x_train)
         x_train = ordinal_encoder.transform(x_train)
+        x_validation = ordinal_encoder.transform(x_validation)
         x_test = ordinal_encoder.transform(x_test)
         print('label successfully ordinal encoded shape : {}'.format(x_test.shape))
-        intput_column_size = x_test.shape[1]
+        input_column_size = x_test.shape[1]
 
         if args.is_onehot_encoding:
             onehot_encoder = OneHotEncoder()
-            onehot_encoder.fit(x_test)
+            onehot_encoder.fit(x_train)
             x_train = onehot_encoder.transform(x_train)
+            x_validation = onehot_encoder.transform(x_validation)
             x_test = onehot_encoder.transform(x_test)
-            intput_column_size = x_test.shape[1]
+            input_column_size = x_test.shape[1]
             print('label successfully onehot encoded shape : {}'.format(x_test.shape))
             print('one hot encoding for A end! ')
 
-    img_rows, img_cols, channels = 160, 160, 1
-
+    img_rows, img_cols, channels = x_train_image.shape[1], x_train_image.shape[2], 1
 
     print('Image data reshaping start')
-    x_train_val_image = x_train_val_image.reshape(x_train_val_image.shape[0], img_rows, img_cols, channels)
+    x_train_image = x_train_image.reshape(-1, img_rows, img_cols, channels)
+    x_validation_image = x_validation_image.reshape(-1, img_rows, img_cols, channels)
+    x_test_image = x_test_image.reshape(-1, img_rows, img_cols, channels)
 
-    x_test_image = x_test_image.reshape(x_test_image.shape[0], img_rows, img_cols, channels)
-    # x_validation_image = x_validation_image.reshape(x_validation_image.shape[0], img_rows, img_cols, channels)
     input_shape = (img_rows, img_cols, channels)
-
     print('Image data reshaping finished')
 
     struct_input = Input(shape=input_shape, name="design_image")
-    wave_input = Input(shape=(intput_column_size,), name="wavelength")
+    wave_input = Input(shape=(input_column_size,), name="wavelength")
 
     r = Conv2D(16, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(struct_input)
     r = MaxPooling2D(pool_size=(2, 2))(r)
@@ -274,7 +308,16 @@ if __name__ == '__main__':
 
     model.summary()
 
-    model.compile(loss=rmse, optimizer=Adam(lr=args.learning_rate), metrics=[rmse])
+    custom_loss = CustomLoss(loss_functions)
+    # Optimizer
+    optimizer = Adam(lr=args.learning_rate)
+    if args.optimizer == 'sgd':
+        optimizer = SGD(lr=args.learning_rate)
+    elif args.optimizer == 'adamw':
+        optimizer = tfa.optimizers.AdamW(learning_rate=args.learning_rate, weight_decay=1e-4)
+    else:
+        optimizer = Adam(lr=args.learning_rate)
+    model.compile(loss=custom_loss.custom_loss, optimizer=optimizer, metrics=['accuracy'])
     # model.compile(loss='mse', optimizer=Adam(lr=args.learning_rate), metrics=['mse', rmse])
     # model.compile(loss=loss_functions, optimizer=Adam(lr=args.learning_rate), metrics=['mse', rmse])
 
@@ -307,16 +350,24 @@ if __name__ == '__main__':
 
     if model_name.startswith('cnn') or model_name.startswith('nn'):
         tic()
-        history = model.fit([x_train_val_image, x_train], y_train,
+        # history = model.fit([x_train_val_image, x_train], y_train,
+        #                     batch_size=batch_size,
+        #                     epochs=epochs,
+        #                     validation_split=0.1,
+        #                     shuffle=True,
+        #                     callbacks=[reduce_lr, mc, stopping])
+        history = model.fit([x_train_image, x_train],
+                            y_train,
                             batch_size=batch_size,
                             epochs=epochs,
-                            validation_split=0.1,
+                            # validation loss and metrics
+                            validation_data=([x_validation_image, x_validation], y_validation),
                             shuffle=True,
                             callbacks=[reduce_lr, mc, stopping])
 
         toc()
-        score = model.evaluate([x_train_val_image, x_train], y_train, verbose=0)
-        y_train_pred = model.predict([x_train_val_image, x_train])
+        score = model.evaluate([x_train_image, x_train], y_train, verbose=0)
+        y_train_pred = model.predict([x_train_image, x_train])
         print('Train loss:', score[0])
         print('Train accuracy:', score[1])
         print('Train R-squared', r2_score(y_train, y_train_pred))
