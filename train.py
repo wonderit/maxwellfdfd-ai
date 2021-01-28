@@ -4,11 +4,12 @@ from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Activation
 from sklearn.metrics import r2_score, mean_squared_error
 from math import sqrt
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD
 import keras
 import matplotlib.pyplot as plt
 from keras import backend as K
 import tensorflow as tf
+import tensorflow_addons as tfa
 from keras import losses
 from PIL import Image
 import numpy as np
@@ -21,7 +22,6 @@ from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, Gradien
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
-from keras.regularizers import l2
 
 
 class CustomLoss:
@@ -121,30 +121,28 @@ def compress_image(prev_image, n):
     return new_image
 
 
-def create_model(model_type, model_input_shape, loss_function, iteration=0, weight_decay_factor=0):
+def create_model(model_type, model_input_shape, loss_function, optim=Adam()):
 
     if model_type.startswith('cnn'):
-        conv_l2 = weight_decay_factor - args.weight_schedule_factor * iteration
-        if conv_l2 > 0:
-            print('Weight Decay Scheduling activated : lamda={}'.format(conv_l2))
+
         model = Sequential()
-        model.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape, use_bias=False, kernel_regularizer=l2(conv_l2)))
+        model.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape, use_bias=False))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, kernel_regularizer=l2(conv_l2)))
+        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, kernel_regularizer=l2(conv_l2)))
+        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, kernel_regularizer=l2(conv_l2)))
+        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(1024, activation='relu', kernel_regularizer=l2(conv_l2), bias_regularizer=l2(conv_l2)))
+        model.add(Dense(1024, activation='relu'))
         model.add(Dropout(0.4))
-        model.add(Dense(24, activation='sigmoid', kernel_regularizer=l2(conv_l2), bias_regularizer=l2(conv_l2)))
-        model.compile(loss=loss_function, optimizer=Adam(lr=args.learning_rate), metrics=['accuracy'])
+        model.add(Dense(24, activation='sigmoid'))
+        model.compile(loss=loss_function, optimizer=optim, metrics=['accuracy'])
     elif model_type.startswith('rf'):
         regr = RandomForestRegressor(n_estimators=100, max_depth=30)
         return regr
@@ -310,9 +308,11 @@ if __name__ == '__main__':
     parser.add_argument("-dm", "--is_different_models", action='store_true')
 
     # arg for weight decay scheduling
-    parser.add_argument("-ws", "--weight_schedule_factor", type=float, default=0.0)
-    parser.add_argument("-wd", "--weight_decay_factor", type=float, default=0.0)
+    parser.add_argument("-ws", "--weight_schedule_factor", type=float, default=1e-5)
+    parser.add_argument("-wd", "--weight_decay_factor", type=float, default=1e-4)
     parser.add_argument("-rm", "--remember_model", action='store_true')
+
+    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
 
 
     args = parser.parse_args()
@@ -626,7 +626,22 @@ if __name__ == '__main__':
                     input_shape = channels * img_rows * img_cols
 
                 tic()
-                model = create_model(model_name, input_shape, custom_loss.custom_loss, i, args.weight_decay_factor)
+
+                # scheduling weight decay
+                wd = 0
+                if args.weight_decay_factor > 0:
+                    wd = args.weight_decay_factor - args.weight_schedule_factor * i
+                    print('Weight Decay Scheduling activated : lamda={}'.format(wd))
+                # Optimizer
+                optimizer = Adam(lr=args.learning_rate)
+                if args.optimizer == 'sgd':
+                    optimizer = SGD(lr=args.learning_rate)
+                elif args.optimizer == 'adamw':
+                    optimizer = tfa.optimizers.AdamW(learning_rate=args.learning_rate, weight_decay=wd)
+                else:
+                    optimizer = Adam(lr=args.learning_rate)
+
+                model = create_model(model_name, input_shape, custom_loss.custom_loss, optimizer)
 
                 # Initialize weights
                 if args.remember_model and prev_model is not None:
