@@ -1,4 +1,3 @@
-import pandas as pd
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input, GlobalAveragePooling2D
 from keras.layers import Conv2D, MaxPooling2D, concatenate
@@ -54,27 +53,6 @@ def toc():
         print(toc_)
         return toc_
 
-def scale(arr, std, mean):
-    arr -= mean
-    arr /= (std + 1e-7)
-    return arr
-
-
-def rescale(arr, std, mean):
-    arr = arr * std
-    arr = arr + mean
-
-    return arr
-
-
-def compress_image(prev_image, n):
-    height = prev_image.shape[0] // n
-    width = prev_image.shape[1] // n
-    new_image = np.zeros((height, width), dtype="uint8")
-    for i in range(0, height):
-        for j in range(0, width):
-            new_image[i, j] = prev_image[n * i, n * j]
-    return new_image
 
 # CPU TEST
 # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -91,11 +69,7 @@ if gpus:
     # Memory growth must be set before GPUs have been initialized
     print(e)
 
-
 ## TRAIN
-# CSV_TRAIN_FILE_PATH = "./data/aby_full_0125_train_(107982, 5).csv"
-# CSV_TEST_FILE_PATH = "./data/aby_full_0125_test_(11999, 5).csv"
-# IMAGE_FILE_PATH = "./data/imaged_h_Xdata_(119981,160,160).npz"
 TRAIN_DATA_PATH = "./data/wv_image_train_0128_(77684,160,160).npz"
 VALIDATION_DATA_PATH = "./data/wv_image_val_0128_(9711,160,160).npz"
 TEST_DATA_PATH = "./data/wv_image_test_0128_(9711,160,160).npz"
@@ -135,17 +109,24 @@ if __name__ == '__main__':
 
     print('Train, Valid, Test Data Loading....')
 
+    # args.unit_test = True
+    # args.optimizer = 'adamw'
+    # epochs = 4
+
     if args.unit_test:
 
         TRAIN_DATA_PATH = "./data/wv_image_val_0128_(9711,160,160).npz"
+        train_data = np.load(TRAIN_DATA_PATH)
+        validation_data = train_data
+        test_data = train_data
+    else:
+        if args.data_augmentation:
+            print('use data augmentation (trainset * 2)')
+            TRAIN_DATA_PATH = "./data/wv_image_train_total_0128_(155316,160,160).npz"
 
-    if args.data_augmentation:
-        print('use data augmentation (trainset * 2)')
-        TRAIN_DATA_PATH = "./data/wv_image_train_total_0128_(155316,160,160).npz"
-
-    train_data = np.load(TRAIN_DATA_PATH)
-    validation_data = np.load(VALIDATION_DATA_PATH)
-    test_data = np.load(TEST_DATA_PATH)
+        train_data = np.load(TRAIN_DATA_PATH)
+        validation_data = np.load(VALIDATION_DATA_PATH)
+        test_data = np.load(TEST_DATA_PATH)
 
     x_train_image = train_data['image']
     x_train = train_data['wv']
@@ -171,9 +152,10 @@ if __name__ == '__main__':
     # x_test_image = 1.0 * (x_test_image > 0)
 
     # preprocess image
-    x_train_image = x_train_image / 116.0
-    x_validation_image = x_validation_image / 116.0
-    x_test_image = x_test_image / 116.0
+    if not args.unit_test:
+        x_train_image = x_train_image / 116.0
+        x_validation_image = x_validation_image / 116.0
+        x_test_image = x_test_image / 116.0
 
     # resize input column
     x_train = x_train.reshape(-1, 1)
@@ -309,6 +291,9 @@ if __name__ == '__main__':
     model.summary()
 
     custom_loss = CustomLoss(loss_functions)
+
+
+
     # Optimizer
     optimizer = Adam(lr=args.learning_rate)
     if args.optimizer == 'sgd':
@@ -338,13 +323,23 @@ if __name__ == '__main__':
                                          save_best_only=True)
 
     # add reduce_lr, earlystopping
-    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=8, verbose=2)  # 8
+    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=50, verbose=2)  # 8
 
     reduce_lr = keras.callbacks.ReduceLROnPlateau(
-        factor=0.1, #0.1
-        patience=2, #2
+        factor=0.5, #0.1
+        patience=20, #2
         verbose=2,
-        min_lr=args.learning_rate * 0.001)
+        # min_lr=args.learning_rate * 0.001
+    )
+
+    if args.optimizer == 'adamw':
+        class addStepCallback(keras.callbacks.Callback):
+            def on_batch_end(self, epoch, logs={}):
+                add_step()
+        callbacks = [addStepCallback(), mc, stopping]
+    else:
+        callbacks = [reduce_lr, mc, stopping]
+
 
     print('Training Start : Lr={}'.format(args.learning_rate))
 
@@ -363,7 +358,7 @@ if __name__ == '__main__':
                             # validation loss and metrics
                             validation_data=([x_validation_image, x_validation], y_validation),
                             shuffle=True,
-                            callbacks=[reduce_lr, mc, stopping])
+                            callbacks=callbacks)
 
         toc()
         score = model.evaluate([x_train_image, x_train], y_train, verbose=0)
