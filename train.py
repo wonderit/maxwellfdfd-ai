@@ -121,27 +121,34 @@ def compress_image(prev_image, n):
     return new_image
 
 
-def create_model(model_type, model_input_shape, loss_function, optim=Adam()):
+def create_model(model_type, model_input_shape, loss_function, optim=Adam(), l2=0):
 
     if model_type.startswith('cnn'):
 
         model = Sequential()
-        model.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape, use_bias=False))
+        model.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape,
+                         use_bias=False, kernel_regularizer=tf.keras.regularizers.l2(l2)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False))
+        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False,
+                         kernel_regularizer=tf.keras.regularizers.l2(l2)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False))
+        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False,
+                         kernel_regularizer=tf.keras.regularizers.l2(l2)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False))
+        model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False,
+                         kernel_regularizer=tf.keras.regularizers.l2(l2)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(1024, activation='relu'))
+        model.add(Dense(1024, activation='relu',
+                        kernel_regularizer=tf.keras.regularizers.l2(l2),
+                        activity_regularizer=tf.keras.regularizers.l2(l2)))
         model.add(Dropout(0.4))
-        model.add(Dense(24, activation='sigmoid'))
+        model.add(Dense(24, activation='sigmoid', kernel_regularizer=tf.keras.regularizers.l2(l2),
+                        activity_regularizer=tf.keras.regularizers.l2(l2)))
         model.compile(loss=loss_function, optimizer=optim, metrics=['accuracy'])
     elif model_type.startswith('rf'):
         regr = RandomForestRegressor(n_estimators=100, max_depth=30)
@@ -308,8 +315,8 @@ if __name__ == '__main__':
     parser.add_argument("-dm", "--is_different_models", action='store_true')
 
     # arg for weight decay scheduling
-    parser.add_argument("-ws", "--weight_schedule_factor", type=float, default=1e-5)
-    parser.add_argument("-wd", "--weight_decay_factor", type=float, default=1e-4)
+    parser.add_argument("-ws", "--weight_schedule_factor", type=float, default=5e-6)
+    parser.add_argument("-wd", "--weight_decay_factor", type=float, default=5e-5)
     parser.add_argument("-rm", "--remember_model", action='store_true')
 
     parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
@@ -631,7 +638,7 @@ if __name__ == '__main__':
                 wd = 0
                 if args.weight_decay_factor > 0:
                     wd = args.weight_decay_factor - args.weight_schedule_factor * i
-                    print('Weight Decay Scheduling activated : lamda={}'.format(wd))
+                    print('Weight Decay Scheduling activated : lambda={}'.format(wd))
 
                 mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min',
                                                      save_best_only=True)
@@ -646,7 +653,7 @@ if __name__ == '__main__':
                 else:
                     optimizer = Adam(lr=args.learning_rate)
 
-                model = create_model(model_name, input_shape, custom_loss.custom_loss, optimizer)
+                model = create_model(model_name, input_shape, custom_loss.custom_loss, optimizer, wd)
 
                 # Initialize weights
                 if args.remember_model and prev_model is not None:
