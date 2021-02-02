@@ -632,14 +632,17 @@ if __name__ == '__main__':
                 if args.weight_decay_factor > 0:
                     wd = args.weight_decay_factor - args.weight_schedule_factor * i
                     print('Weight Decay Scheduling activated : lamda={}'.format(wd))
+
+                mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min',
+                                                     save_best_only=True)
+                callbacks = [mc, reduce_lr, stopping]
                 # Optimizer
                 optimizer = Adam(lr=args.learning_rate)
                 if args.optimizer == 'sgd':
                     optimizer = SGD(lr=args.learning_rate)
                 elif args.optimizer == 'adamw':
-                    learning_rate = K.variable(args.learning_rate)
-                    optimizer = tfa.optimizers.AdamW(learning_rate=learning_rate, weight_decay=wd)
-                    optimizer.lr = learning_rate
+                    optimizer = tfa.optimizers.AdamW(learning_rate=args.learning_rate, weight_decay=wd)
+                    callbacks = [mc, stopping]
                 else:
                     optimizer = Adam(lr=args.learning_rate)
 
@@ -649,16 +652,13 @@ if __name__ == '__main__':
                 if args.remember_model and prev_model is not None:
                     print('Initializing model with previous model 0')
                     model.set_weights(prev_model.get_weights())
-
-                mc = keras.callbacks.ModelCheckpoint(model_export_path, monitor='val_loss', mode='min',
-                                                     save_best_only=True)
                 history = model.fit(input_L_x, L_y,
                                     batch_size=batch_size,
                                     epochs=epochs,
                                     # pass validation for monitoring
                                     # validation loss and metrics
                                     validation_data=(valid_x, y_validation),
-                                    callbacks=[mc, reduce_lr, stopping])
+                                    callbacks=callbacks)
                 toc()
                 score = model.evaluate(input_L_x, L_y, verbose=0)
                 print('Model : {}, Train loss: {}, accuracy: {}'.format(model_name, score[0], score[1]))
