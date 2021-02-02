@@ -637,7 +637,10 @@ if __name__ == '__main__':
                 if args.optimizer == 'sgd':
                     optimizer = SGD(lr=args.learning_rate)
                 elif args.optimizer == 'adamw':
-                    optimizer = tfa.optimizers.AdamW(learning_rate=args.learning_rate, weight_decay=wd)
+                    import tensorflow as tf
+                    learning_rate = K.variable(args.learning_rate)
+                    optimizer = tfa.optimizers.AdamW(learning_rate=learning_rate, weight_decay=wd)
+                    optimizer.lr = learning_rate
                 else:
                     optimizer = Adam(lr=args.learning_rate)
 
