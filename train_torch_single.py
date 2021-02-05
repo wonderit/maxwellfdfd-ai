@@ -3,14 +3,19 @@ import torch.nn as nn
 import numpy as np
 import argparse
 from PIL import Image
+import os
+import pandas as pd
+from sklearn.metrics import r2_score, mean_squared_error
+
+from torch.utils.data import Dataset
 
 # Device configuration
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # Hyper parameters
-num_epochs = 5
-num_classes = 10
-batch_size = 100
+num_epochs = 10
+num_classes = 24
+batch_size = 128
 learning_rate = 0.001
 
 
@@ -102,6 +107,24 @@ DATASETS_TEST = [
 #                                           train=False,
 #                                           transform=transforms.ToTensor())
 
+
+class MaxwellFDFDDataset(Dataset):
+    def __init__(self, data, target, transform=None):
+        self.data = torch.from_numpy(data).float()
+        self.target = torch.from_numpy(target).float()
+        self.transform = transform
+
+    def __getitem__(self, index):
+        x = self.data[index]
+        y = self.target[index]
+
+        return x, y
+
+    def __len__(self):
+        return len(self.data)
+
+print('Converting to TorchDataset...')\
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", help="Select model type.", default="cnn")
@@ -139,7 +162,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # TEST
-    args.unit_test = True
+    # args.unit_test = True
     args.debug = True
     args.teacher_outlier_rejection = True
     args.max_epoch = 1
@@ -227,8 +250,15 @@ if __name__ == '__main__':
     y_validation = np.array(y_validation)
     y_validation = np.true_divide(y_validation, 2767.1)
 
-    train_dataset
-    test_dataset
+    # reshape dataset
+    x_train = x_train.reshape(x_train.shape[0], channels, img_rows, img_cols)
+
+    x_validation = x_validation.reshape(x_validation.shape[0], channels, img_rows, img_cols)
+    input_shape = (channels, img_rows, img_cols)
+
+    train_dataset = MaxwellFDFDDataset(x_train, y_train, transform=False)
+
+    test_dataset = MaxwellFDFDDataset(x_validation, y_validation, transform=False)
 
     # Data loader
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
@@ -242,23 +272,33 @@ if __name__ == '__main__':
 
     # Convolutional neural network (two convolutional layers)
     class ConvNet(nn.Module):
-        def __init__(self, num_classes=10):
+        def __init__(self, num_classes=24):
             super(ConvNet, self).__init__()
             self.layer1 = nn.Sequential(
-                nn.Conv2d(1, 16, kernel_size=5, stride=1, padding=2),
-                nn.BatchNorm2d(16),
+                nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1),
+                # nn.BatchNorm2d(16),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.layer2 = nn.Sequential(
-                nn.Conv2d(16, 32, kernel_size=5, stride=1, padding=2),
-                nn.BatchNorm2d(32),
+                nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
-            self.fc = nn.Linear(7 * 7 * 32, num_classes)
+            self.layer3 = nn.Sequential(
+                nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2))
+            self.layer4 = nn.Sequential(
+                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2))
+
+            self.fc = nn.Linear(4608, num_classes)
 
         def forward(self, x):
             out = self.layer1(x)
             out = self.layer2(out)
+            out = self.layer3(out)
+            out = self.layer4(out)
             out = out.reshape(out.size(0), -1)
             out = self.fc(out)
             return out
@@ -267,7 +307,8 @@ if __name__ == '__main__':
     model = ConvNet(num_classes).to(device)
 
     # Loss and optimizer
-    criterion = nn.CrossEntropyLoss()
+    # criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # Train the model
@@ -286,7 +327,7 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
 
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 10 == 0:
                 print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
                       .format(epoch + 1, num_epochs, i + 1, total_step, loss.item()))
 
@@ -295,15 +336,29 @@ if __name__ == '__main__':
     with torch.no_grad():
         correct = 0
         total = 0
+        pred_array = []
+        labels_array = []
         for images, labels in test_loader:
             images = images.to(device)
             labels = labels.to(device)
             outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
 
-        print('Test Accuracy of the model on the 10000 test images: {} %'.format(100 * correct / total))
+            pred_array.extend(outputs.numpy().reshape(-1))
+            labels_array.extend(labels.numpy().reshape(-1))
+            # _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            # correct += (predicted == labels).sum().item()
+
+
+        pred_array = np.array(pred_array)
+        labels_array = np.array(labels_array)
+
+        pred_array = pred_array.reshape(-1)
+        labels_array = labels_array.reshape(-1)
+        print('labels array shape: {}, pred array shape: {}'.format(labels_array.shape, pred_array.shape))
+        mse = mean_squared_error(labels_array, pred_array)
+        r2 = r2_score(y_true=labels_array, y_pred=pred_array)
+        print('Test Accuracy of the model on the {} test images, loss: {}, R^2 : {} '.format(total, mse, r2))
 
     # Save the model checkpoint
-    torch.save(model.state_dict(), 'torch_single/model.ckpt')
+    torch.save(model.state_dict(), 'torch_model_single/model.ckpt')
