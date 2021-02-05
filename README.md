@@ -75,7 +75,7 @@ user.sub q=shr_gpu ngpu=1 gputype=titan info=tensorflow jname=0127Fhrmse ~/jsh2/
 user.sub q=shr_gpu ngpu=1 gputype=titan info=tensorflow jname=cnn_raw_rmse ../py3-maxwell/bin/python train.py -tr -1 -te -1 -m cnn_raw_rmse 
  bjobs, bstop, bkill
 
-
+python train_4sym.py -oe -tr -1 -te -1  > train_4sym_maxep50_patience_8_2.log &
 # Run script 
 
 * Train
