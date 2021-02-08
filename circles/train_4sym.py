@@ -333,23 +333,23 @@ if __name__ == '__main__':
                                          save_best_only=True)
 
     # add reduce_lr, earlystopping
-    # stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=50, verbose=2)  # 8
-
-    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=8, verbose=2)  # 8
-
-    # reduce_lr = keras.callbacks.ReduceLROnPlateau(
-    #     factor=0.5, #0.1
-    #     patience=20, #2
-    #     verbose=2,
-    # )
-
+    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=50, verbose=2)  # 8
+    #
+    # stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=8, verbose=2)  # 8
 
     reduce_lr = keras.callbacks.ReduceLROnPlateau(
-        factor=0.1, #0.1
-        patience=2, #2
+        factor=0.5, #0.1
+        patience=20, #2
         verbose=2,
-        min_lr=args.learning_rate * 0.001
     )
+    #
+    #
+    # reduce_lr = keras.callbacks.ReduceLROnPlateau(
+    #     factor=0.1, #0.1
+    #     patience=2, #2
+    #     verbose=2,
+    #     min_lr=args.learning_rate * 0.001
+    # )
 
     if args.optimizer == 'adamw':
         class addStepCallback(keras.callbacks.Callback):
