@@ -338,8 +338,9 @@ if __name__ == '__main__':
                 nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
-
-            self.fc = nn.Linear(4608, num_classes)
+            self.fc1 = nn.Linear(4608, 1024)
+            self.fc2 = nn.Linear(1024, num_classes)
+            self.dropout = nn.Dropout(p=0.4)
 
         def forward(self, x):
             out = self.layer1(x)
@@ -347,7 +348,9 @@ if __name__ == '__main__':
             out = self.layer3(out)
             out = self.layer4(out)
             out = out.reshape(out.size(0), -1)
-            out = self.fc(out)
+            out = self.fc1(out)
+            out = self.dropout(out)
+            out = self.fc2(out)
             return out
 
 
