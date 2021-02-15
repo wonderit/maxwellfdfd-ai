@@ -8,15 +8,16 @@ import pandas as pd
 from sklearn.metrics import r2_score, mean_squared_error
 
 from torch.utils.data import Dataset
+import matplotlib.pyplot as plt
 
 # Device configuration
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-# Hyper parameters
-num_epochs = 10
-num_classes = 24
-batch_size = 128
-learning_rate = 0.001
+#
+# # Hyper parameters
+# num_epochs = 10
+# num_classes = 24
+# batch_size = 128
+# learning_rate = 0.001
 
 
 ## TRAIN
@@ -132,7 +133,7 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)",
                         default='rmse')
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
-    parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=50)
+    parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
     # arg for AL
@@ -165,14 +166,21 @@ if __name__ == '__main__':
     # args.unit_test = True
     args.debug = True
     args.teacher_outlier_rejection = True
-    args.max_epoch = 1
+    # args.max_epoch = 1
     args.is_active_learning = True
+
+    # Hyper parameters
+    # num_epochs = 10
+    num_classes = 24
+    # batch_size = 128
+    # learning_rate = 0.001
 
     model_name = args.model
     batch_size = int(args.batch_size)
-    epochs = int(args.max_epoch)
+    num_epochs = int(args.max_epoch)
     loss_functions = args.loss_function
     input_shape_type = args.shape
+    learning_rate = args.learning_rate
 
     img_rows, img_cols, channels = 100, 200, 1
 
@@ -242,6 +250,35 @@ if __name__ == '__main__':
 
             x_validation.append(image)
     print('Data Loading... Validation dataset Finished.')
+
+    print('Data Loading... Test dataset Start.')
+
+    x_test = []
+    y_test = []
+    for data_test in DATASETS_TEST:
+        dataframe = pd.read_csv(os.path.join(DATAPATH_TEST, '{}.csv'.format(data_test)), delim_whitespace=False,
+                                header=None)
+        dataset = dataframe.values
+
+        # split into input (X) and output (Y) variables
+        fileNames = dataset[:, 0]
+        y_test.extend(dataset[:, 1:25])
+        for idx, file in enumerate(fileNames):
+
+            try:
+                image = Image.open(os.path.join(DATAPATH_TEST, data_test, '{}.tiff'.format(int(file))))
+                image = np.array(image, dtype=np.uint8)
+            except (TypeError, FileNotFoundError) as te:
+                image = Image.open(os.path.join(DATAPATH_TEST, data_test, '{}.tiff'.format(idx + 1)))
+                try:
+                    image = np.array(image, dtype=np.uint8)
+                except:
+                    continue
+
+            x_test.append(image)
+    print('Data Loading... Test dataset Finished.')
+
+
     x_train = np.array(x_train)
     y_train = np.array(y_train)
     y_train = np.true_divide(y_train, 2767.1)
@@ -250,25 +287,35 @@ if __name__ == '__main__':
     y_validation = np.array(y_validation)
     y_validation = np.true_divide(y_validation, 2767.1)
 
+    x_test = np.array(x_test)
+    y_test = np.array(y_test)
+    y_test = np.true_divide(y_test, 2767.1)
+
     # reshape dataset
     x_train = x_train.reshape(x_train.shape[0], channels, img_rows, img_cols)
-
     x_validation = x_validation.reshape(x_validation.shape[0], channels, img_rows, img_cols)
+    x_test = x_test.reshape(x_test.shape[0], channels, img_rows, img_cols)
+
     input_shape = (channels, img_rows, img_cols)
 
-    train_dataset = MaxwellFDFDDataset(x_train, y_train, transform=False)
+    train_set = MaxwellFDFDDataset(x_train, y_train, transform=False)
 
-    test_dataset = MaxwellFDFDDataset(x_validation, y_validation, transform=False)
+    valid_set = MaxwellFDFDDataset(x_validation, y_validation, transform=False)
+
+    test_set = MaxwellFDFDDataset(x_test, y_test, transform=False)
 
     # Data loader
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+    train_loader = torch.utils.data.DataLoader(dataset=train_set,
                                                batch_size=batch_size,
                                                shuffle=True)
 
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+    valid_loader = torch.utils.data.DataLoader(dataset=valid_set,
                                               batch_size=batch_size,
                                               shuffle=False)
 
+    test_loader = torch.utils.data.DataLoader(dataset=test_set,
+                                              batch_size=batch_size,
+                                              shuffle=False)
 
     # Convolutional neural network (two convolutional layers)
     class ConvNet(nn.Module):
@@ -313,7 +360,24 @@ if __name__ == '__main__':
 
     # Train the model
     total_step = len(train_loader)
+
+    # train, val loss
+    val_loss_array = []
+    train_loss_array = []
+
+    # create loss log folder
+    torch_loss_folder = 'torch/train_progress'
+    torch_model_folder = 'torch/model'
+
+    if not os.path.exists(torch_loss_folder):
+        os.makedirs(torch_loss_folder)
+
+    if not os.path.exists(torch_model_folder):
+        os.makedirs(torch_model_folder)
+
     for epoch in range(num_epochs):
+        model.train()
+        train_loss = 0
         for i, (images, labels) in enumerate(train_loader):
             images = images.to(device)
             labels = labels.to(device)
@@ -327,14 +391,46 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
 
+            train_loss = loss.item()
             if (i + 1) % 10 == 0:
                 print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
-                      .format(epoch + 1, num_epochs, i + 1, total_step, loss.item()))
+                      .format(epoch + 1, num_epochs, i + 1, total_step, train_loss))
+
+        train_loss_array.append(train_loss)
+
+
+        # Validate the model
+        # Test the model
+        model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
+        with torch.no_grad():
+            total = 0
+            pred_array = []
+            labels_array = []
+            for images, labels in valid_loader:
+                images = images.to(device)
+                labels = labels.to(device)
+                outputs = model(images)
+
+                pred_array.extend(outputs.cpu().numpy().reshape(-1))
+                labels_array.extend(labels.cpu().numpy().reshape(-1))
+                total += labels.size(0)
+
+            pred_array = np.array(pred_array)
+            labels_array = np.array(labels_array)
+
+            pred_array = pred_array.reshape(-1)
+            labels_array = labels_array.reshape(-1)
+            rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
+            r2 = r2_score(y_true=labels_array, y_pred=pred_array)
+            val_loss_array.append(rmse)
+            print('Validation Accuracy of the model on the {} validation images, loss: {}, R^2 : {} '.format(total, rmse, r2))
 
     # Test the model
     model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
+
+    test_r2 = 0
+    test_rmse = 0
     with torch.no_grad():
-        correct = 0
         total = 0
         pred_array = []
         labels_array = []
@@ -345,9 +441,7 @@ if __name__ == '__main__':
 
             pred_array.extend(outputs.cpu().numpy().reshape(-1))
             labels_array.extend(labels.cpu().numpy().reshape(-1))
-            # _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
-            # correct += (predicted == labels).sum().item()
 
 
         pred_array = np.array(pred_array)
@@ -356,9 +450,23 @@ if __name__ == '__main__':
         pred_array = pred_array.reshape(-1)
         labels_array = labels_array.reshape(-1)
         print('labels array shape: {}, pred array shape: {}'.format(labels_array.shape, pred_array.shape))
-        mse = mean_squared_error(labels_array, pred_array)
-        r2 = r2_score(y_true=labels_array, y_pred=pred_array)
-        print('Test Accuracy of the model on the {} test images, loss: {}, R^2 : {} '.format(total, mse, r2))
+        test_rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
+        test_r2 = r2_score(y_true=labels_array, y_pred=pred_array)
+        print('Test Accuracy of the model on the {} test images, loss: {}, R^2 : {} '.format(total, test_rmse, test_r2))
 
     # Save the model checkpoint
-    torch.save(model.state_dict(), 'torch_model_single/model.ckpt')
+    model_file_name = '{}/model-{}-{}-ep{}-lr{}.ckpt'.format(torch_model_folder, test_rmse, test_r2, num_epochs, learning_rate)
+    torch.save(model.state_dict(), model_file_name)
+
+
+    # Save learning curve
+    plt.clf()
+    plt.plot(train_loss_array)
+    plt.plot(val_loss_array)
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Model - Loss')
+    plt.legend(['Training', 'Validation'], loc='upper right')
+    log_curve_file_name = '{}/log-curve-{}-{}-ep{}-lr{}.png'.format(torch_loss_folder, test_rmse, test_r2, num_epochs,
+                                                                             learning_rate)
+    plt.savefig(log_curve_file_name)
