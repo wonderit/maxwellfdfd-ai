@@ -10,6 +10,8 @@ from sklearn.metrics import r2_score, mean_squared_error
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 
+from pytorchtools import EarlyStopping
+
 # Device configuration
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 #
@@ -361,6 +363,15 @@ if __name__ == '__main__':
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+    # Lr scheduler
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer,
+                                            lr_lambda=lambda epoch: 0.95 ** epoch,
+                                            last_epoch=-1,
+                                            verbose=True)
+
+    # Early Stopping
+    early_stopping = EarlyStopping(patience = 8, verbose = True)
+
     # Train the model
     total_step = len(train_loader)
 
@@ -386,14 +397,17 @@ if __name__ == '__main__':
             images = images.to(device)
             labels = labels.to(device)
 
+            # Backward and optimize
+            optimizer.zero_grad()
+
             # Forward pass
             outputs = model(images)
             loss = torch.sqrt(criterion(outputs, labels))
 
-            # Backward and optimize
-            optimizer.zero_grad()
             loss.backward()
+
             optimizer.step()
+            scheduler.step()
 
             train_loss += loss.item()
             count += 1
@@ -429,7 +443,14 @@ if __name__ == '__main__':
             rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
             r2 = r2_score(y_true=labels_array, y_pred=pred_array)
             val_loss_array.append(rmse)
+
             print('Validation Accuracy of the model on the {} validation images, loss: {:.4f}, R^2 : {:.4f} '.format(total, rmse, r2))
+
+            early_stopping(rmse, model)
+
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
 
     # Test the model
     model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
