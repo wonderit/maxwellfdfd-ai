@@ -381,6 +381,7 @@ if __name__ == '__main__':
     for epoch in range(num_epochs):
         model.train()
         train_loss = 0
+        count = 0
         for i, (images, labels) in enumerate(train_loader):
             images = images.to(device)
             labels = labels.to(device)
@@ -394,12 +395,14 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
 
-            train_loss = loss.item()
+            train_loss += loss.item()
+            count += 1
+
             if (i + 1) % 10 == 0:
                 print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
-                      .format(epoch + 1, num_epochs, i + 1, total_step, train_loss))
+                      .format(epoch + 1, num_epochs, i + 1, total_step, loss.item()))
 
-        train_loss_array.append(train_loss)
+        train_loss_array.append(train_loss / count)
 
 
         # Validate the model
