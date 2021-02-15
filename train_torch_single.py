@@ -423,7 +423,7 @@ if __name__ == '__main__':
             rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
             r2 = r2_score(y_true=labels_array, y_pred=pred_array)
             val_loss_array.append(rmse)
-            print('Validation Accuracy of the model on the {} validation images, loss: {}, R^2 : {} '.format(total, rmse, r2))
+            print('Validation Accuracy of the model on the {} validation images, loss: {:.4f}, R^2 : {:.4f} '.format(total, rmse, r2))
 
     # Test the model
     model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
@@ -452,10 +452,10 @@ if __name__ == '__main__':
         print('labels array shape: {}, pred array shape: {}'.format(labels_array.shape, pred_array.shape))
         test_rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
         test_r2 = r2_score(y_true=labels_array, y_pred=pred_array)
-        print('Test Accuracy of the model on the {} test images, loss: {}, R^2 : {} '.format(total, test_rmse, test_r2))
+        print('Test Accuracy of the model on the {} test images, loss: {:.4f}, R^2 : {:.4f} '.format(total, test_rmse, test_r2))
 
     # Save the model checkpoint
-    model_file_name = '{}/model-{}-{}-ep{}-lr{}.ckpt'.format(torch_model_folder, test_rmse, test_r2, num_epochs, learning_rate)
+    model_file_name = '{}/model-{:.4f}-{:.4f}-ep{}-lr{}.ckpt'.format(torch_model_folder, test_rmse, test_r2, num_epochs, learning_rate)
     torch.save(model.state_dict(), model_file_name)
 
 
@@ -467,6 +467,6 @@ if __name__ == '__main__':
     plt.ylabel('Loss')
     plt.title('Model - Loss')
     plt.legend(['Training', 'Validation'], loc='upper right')
-    log_curve_file_name = '{}/log-curve-{}-{}-ep{}-lr{}.png'.format(torch_loss_folder, test_rmse, test_r2, num_epochs,
+    log_curve_file_name = '{}/log-curve-{:.4f}-{:.4f}-ep{}-lr{}.png'.format(torch_loss_folder, test_rmse, test_r2, num_epochs,
                                                                              learning_rate)
     plt.savefig(log_curve_file_name)
