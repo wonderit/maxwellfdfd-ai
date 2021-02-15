@@ -320,7 +320,7 @@ if __name__ == '__main__':
 
             # Forward pass
             outputs = model(images)
-            loss = criterion(outputs, labels)
+            loss = torch.sqrt(criterion(outputs, labels))
 
             # Backward and optimize
             optimizer.zero_grad()
