@@ -343,8 +343,8 @@ if __name__ == '__main__':
             labels = labels.to(device)
             outputs = model(images)
 
-            pred_array.extend(outputs.numpy().reshape(-1))
-            labels_array.extend(labels.numpy().reshape(-1))
+            pred_array.extend(outputs.cpu().numpy().reshape(-1))
+            labels_array.extend(labels.cpu().numpy().reshape(-1))
             # _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             # correct += (predicted == labels).sum().item()
