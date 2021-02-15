@@ -364,7 +364,8 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # Lr scheduler
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch, verbose=True)
+    # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch, verbose=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True)
 
     # Early Stopping
     early_stopping = EarlyStopping(patience = 8, verbose = True)
@@ -404,7 +405,6 @@ if __name__ == '__main__':
             loss.backward()
 
             optimizer.step()
-            scheduler.step()
 
             train_loss += loss.item()
             count += 1
@@ -437,13 +437,16 @@ if __name__ == '__main__':
 
             pred_array = pred_array.reshape(-1)
             labels_array = labels_array.reshape(-1)
-            rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
+            val_loss = np.sqrt(mean_squared_error(labels_array, pred_array))
             r2 = r2_score(y_true=labels_array, y_pred=pred_array)
-            val_loss_array.append(rmse)
+            val_loss_array.append(val_loss)
 
-            print('Validation Accuracy of the model on the {} validation images, loss: {:.4f}, R^2 : {:.4f} '.format(total, rmse, r2))
+            print('Validation Accuracy of the model on the {} validation images, loss: {:.4f}, R^2 : {:.4f} '.format(total, val_loss, r2))
 
-            early_stopping(rmse, model)
+            early_stopping(val_loss, model)
+
+            scheduler.step(val_loss)
+
 
         if early_stopping.early_stop:
             print("Early stopping")
