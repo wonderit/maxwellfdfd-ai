@@ -364,10 +364,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # Lr scheduler
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer,
-                                            lr_lambda=lambda epoch: 0.95 ** epoch,
-                                            last_epoch=-1,
-                                            verbose=True)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch, verbose=True)
 
     # Early Stopping
     early_stopping = EarlyStopping(patience = 8, verbose = True)
