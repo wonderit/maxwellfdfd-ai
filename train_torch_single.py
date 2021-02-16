@@ -368,7 +368,7 @@ if __name__ == '__main__':
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True)
 
     # Early Stopping
-    early_stopping = EarlyStopping(patience = 8, verbose = True)
+    early_stopping = EarlyStopping(patience=10, verbose = True)
 
     # Train the model
     total_step = len(train_loader)
