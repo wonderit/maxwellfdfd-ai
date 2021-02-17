@@ -58,10 +58,9 @@ if __name__ == '__main__':
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
-    # arg for AL
-    parser.add_argument("-it", "--iteration", help="Set iteration for training", type=int, default=1)
-    parser.add_argument("-n", "--num_models", help="Set number of models for evaluation", type=int, default=3)
-
+    #
+    parser.add_argument("-tr", "--n_train", help="Set train set number", type=int, default=1000)
+    parser.add_argument("-te", "--n_test", help="Set test set", type=int, default=100)
     parser.add_argument("-oe", "--is_ordinal_encoding", help="flag for ordinal encoding 'a'", action='store_true')
     parser.add_argument("-oh", "--is_onehot_encoding", help="flag for onehot encoding 'a'", action='store_true')
 
@@ -91,7 +90,6 @@ if __name__ == '__main__':
     batch_size = int(args.batch_size)
     num_epochs = int(args.max_epoch)
     loss_functions = args.loss_function
-    input_shape_type = args.shape
     learning_rate = args.learning_rate
 
     img_rows, img_cols, channels = 160, 160, 1
