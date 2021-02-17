@@ -76,9 +76,8 @@ user.sub q=shr_gpu ngpu=1 gputype=titan info=tensorflow jname=cnn_raw_rmse ../py
  bjobs, bstop, bkill
 
 python train_4sym.py -oe -tr -1 -te -1  > train_4sym_maxep50_patience_8_2.log &
-
-
 python train_7x.py -oe -tr -1 -te -1  > train_7x_maxep50_patience_8_2_batch512.log &
+user.sub q=shr_gpu ngpu=1 gputype=titan info=tensorflow jname=0217_8x_oe_patience_20_50 ../py3-maxwell/bin/python train_8x.py -tr -1 -te -1 -oe -pl 20 -pes 50 -e 500 -lr 1e-5
 # Run script 
 
 * Train
