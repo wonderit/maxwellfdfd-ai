@@ -1,4 +1,3 @@
-
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input, GlobalAveragePooling2D
 from keras.layers import Conv2D, MaxPooling2D, concatenate
@@ -17,7 +16,7 @@ from sklearn.metrics import r2_score
 
 
 def rmse(y_true, y_pred):
-	return K.sqrt(K.mean(K.square(y_pred - y_true)))
+    return K.sqrt(K.mean(K.square(y_pred - y_true)))
 
 
 class CustomLoss:
@@ -35,6 +34,7 @@ class CustomLoss:
             loss = loss + K.sqrt(K.mean(K.square(y_pred - y_true)))
 
         return loss
+
 
 def tic():
     import time
@@ -60,15 +60,15 @@ def toc():
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
-  try:
-    # Currently, memory growth needs to be the same across GPUs
-    for gpu in gpus:
-      tf.config.experimental.set_memory_growth(gpu, True)
-    logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-  except RuntimeError as e:
-    # Memory growth must be set before GPUs have been initialized
-    print(e)
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+    except RuntimeError as e:
+        # Memory growth must be set before GPUs have been initialized
+        print(e)
 
 ## TRAIN
 TRAIN_1_DATA_PATH = "./data/wv_h580_train1_350000-160-160.npz"
@@ -78,7 +78,8 @@ TEST_DATA_PATH = "./data/wv_h580_test_69969-160-160.npz"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", help="Select model type.", default="cnn")
-    parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default='rmse')
+    parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)",
+                        default='rmse')
 
     parser.add_argument("-tr", "--n_train", help="Set train set number", type=int, default=1000)
 
@@ -100,7 +101,7 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
 
     parser.add_argument("-pl", "--patience_lr", help="Set patience of lr", type=int, default=2)
-    parser.add_argument("-pes", "--patience_eary_stopping", help="Set patience of es", type=int, default=8)
+    parser.add_argument("-pes", "--patience_early_stopping", help="Set patience of es", type=int, default=8)
 
     args = parser.parse_args()
     model_name = args.model
@@ -149,27 +150,59 @@ if __name__ == '__main__':
         print('keys test: ', test_data.files)
 
         x_train_image = train_1_data['xtrain']
+        print('preprocess1 start')
+        x_train_image = x_train_image.astype(np.uint8)
+        x_train_image = np.true_divide(x_train_image, 116).astype(np.uint8)
+        print('preprocess1 end')
+
         x_train = train_1_data['wvtrain']
         y_train = train_1_data['ytrain']
 
+        print('preprocess2 start')
+        x_train_image_2 = train_2_data['xtrain']
+        x_train_image_2 = x_train_image_2.astype(np.uint8)
+        x_train_image_2 = np.true_divide(x_train_image_2, 116).astype(np.uint8)
+        print('preprocess2 end')
 
-        x_train_image = np.append(x_train_image, train_2_data['xtrain'], axis=0)
+        x_train_image = np.append(x_train_image, x_train_image_2, axis=0)
         x_train = np.append(x_train, train_2_data['wvtrain'], axis=0)
         y_train = np.append(y_train, train_2_data['ytrain'], axis=0)
 
         x_validation_image = train_1_data['xtest']
+
+        print('preprocess3 start')
+        x_validation_image = x_validation_image.astype(np.uint8)
+        x_validation_image = np.true_divide(x_validation_image, 116).astype(np.uint8)
+        print('preprocess3 end')
+
         x_validation = train_1_data['wvtest']
         y_validation = train_1_data['ytest']
 
-        x_validation_image = np.append(x_validation_image, train_2_data['xtest'])
-        x_validation = np.append(x_validation, train_2_data['wvtest'])
-        y_validation = np.append(y_validation, train_2_data['ytest'])
+        print('preprocess4 start')
+        x_validation_image_2 = train_2_data['xtest']
+        x_validation_image_2 = x_validation_image_2.astype(np.uint8)
+        x_validation_image_2 = np.true_divide(x_validation_image_2, 116).astype(np.uint8)
+        print('preprocess4 end')
+
+        x_validation_image = np.append(x_validation_image, x_validation_image_2, axis=0)
+        x_validation = np.append(x_validation, train_2_data['wvtest'], axis=0)
+        y_validation = np.append(y_validation, train_2_data['ytest'], axis=0)
 
         x_test_image = test_data['image']
+        print('preprocess5 start')
+        x_test_image = x_test_image.astype(np.uint8)
+        x_test_image = np.true_divide(x_test_image, 116).astype(np.uint8)
+        print('preprocess5 end')
         x_test = test_data['wv']
         y_test = test_data['y']
 
-    print('Train, Valid, Test Data Loading finished (shape : train/valid/test > {}/{}/{})'.format(len(y_train), len(y_validation), len(y_test)))
+        print('freeing memory start')
+        del train_1_data, train_2_data, test_data, x_train_image_2, x_validation_image_2
+        print('freeing memory end')
+
+    print('Train, Valid, Test Data Loading finished (shape : train/valid/test > {}/{}/{})'.format(len(y_train),
+                                                                                                  len(y_validation),
+                                                                                                  len(y_test)))
 
     # of train, test set
     n_train = len(y_train)
@@ -183,9 +216,14 @@ if __name__ == '__main__':
 
     # preprocess image
     if not args.unit_test:
-        x_train_image = x_train_image / 116.0
-        x_validation_image = x_validation_image / 116.0
-        x_test_image = x_test_image / 116.0
+        print('preprocess start')
+        # x_train_image = np.true_divide(x_train_image, 116.0)
+        # x_validation_image = np.true_divide(x_validation_image, 116.0)
+        # x_test_image = np.true_divide(x_test_image, 116.0)
+        print('preprocess end')
+        # x_train_image = x_train_image / 116.0
+        # x_validation_image = x_validation_image / 116.0
+        # x_test_image = x_test_image / 116.0
 
     # resize input column
     x_train = x_train.reshape(-1, 1)
@@ -322,8 +360,6 @@ if __name__ == '__main__':
 
     custom_loss = CustomLoss(loss_functions)
 
-
-
     # Optimizer
     optimizer = Adam(lr=args.learning_rate)
     if args.optimizer == 'sgd':
@@ -337,11 +373,13 @@ if __name__ == '__main__':
     # model.compile(loss=loss_functions, optimizer=Adam(lr=args.learning_rate), metrics=['mse', rmse])
 
     # add callback
-    model_export_path_folder = 'models_blue/{}_tr-te_{}-{}_{}_{}_lr{}'.format(model_name, n_train, n_test, batch_size, epochs, args.learning_rate)
+    model_export_path_folder = 'models_blue/{}_tr-te_{}-{}_{}_{}_lr{}'.format(model_name, n_train, n_test, batch_size,
+                                                                              epochs, args.learning_rate)
     if not os.path.exists(model_export_path_folder):
         os.makedirs(model_export_path_folder)
 
-    model_export_path_template = '{}/{}'.format(model_export_path_folder, loss_functions) + '-ep{epoch:02d}-val{val_loss:.4f}.hdf5'
+    model_export_path_template = '{}/{}'.format(model_export_path_folder,
+                                                loss_functions) + '-ep{epoch:02d}-val{val_loss:.4f}.hdf5'
     model_file_path = model_export_path_template
     print('model_file_path : ', model_file_path)
     # serialize weights to HDF5
@@ -353,7 +391,8 @@ if __name__ == '__main__':
                                          save_best_only=True)
 
     # add reduce_lr, earlystopping
-    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=args.patience_early_stopping, verbose=2)  # 8, 50
+    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=args.patience_early_stopping,
+                                             verbose=2)  # 8, 50
     #
     # stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=8, verbose=2)  # 8
     patience_lr_factor = 0.1
@@ -362,8 +401,8 @@ if __name__ == '__main__':
 
     print('patience lr : {}, lr factor : {}'.format(args.patience_lr, patience_lr_factor))
     reduce_lr = keras.callbacks.ReduceLROnPlateau(
-        factor=patience_lr_factor, #0.1, 0.5
-        patience=args.patience_lr, #2, 20
+        factor=patience_lr_factor,  # 0.1, 0.5
+        patience=args.patience_lr,  # 2, 20
         verbose=2,
     )
     #
@@ -375,14 +414,7 @@ if __name__ == '__main__':
     #     min_lr=args.learning_rate * 0.001
     # )
 
-    if args.optimizer == 'adamw':
-        class addStepCallback(keras.callbacks.Callback):
-            def on_batch_end(self, epoch, logs={}):
-                add_step()
-        callbacks = [addStepCallback(), mc, stopping]
-    else:
-        callbacks = [reduce_lr, mc, stopping]
-
+    callbacks = [reduce_lr, mc, stopping]
 
     print('Training Start : Lr={}'.format(args.learning_rate))
 
@@ -432,7 +464,8 @@ if __name__ == '__main__':
     else:
         regr = model.fit(x_train, y_train)
 
-        model_export_path_folder = 'models_blue/{}_{}_{}_lr{}'.format(model_name, batch_size, epochs, args.learning_rate)
+        model_export_path_folder = 'models_blue/{}_{}_{}_lr{}'.format(model_name, batch_size, epochs,
+                                                                      args.learning_rate)
         if not os.path.exists(model_export_path_folder):
             os.makedirs(model_export_path_folder)
 
