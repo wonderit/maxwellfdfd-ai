@@ -3,7 +3,6 @@ import torch.nn as nn
 import numpy as np
 import argparse
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
-from sklearn.externals import joblib
 import os
 from sklearn.metrics import r2_score, mean_squared_error
 
@@ -14,23 +13,17 @@ from pytorchtools import EarlyStopping
 
 # Device configuration
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-#
-# # Hyper parameters
-# num_epochs = 10
-# num_classes = 24
-# batch_size = 128
-# learning_rate = 0.001
+print('Torch is running on Device : {}'.format(device))
 
-
-## TRAIN
+# Data path configuration
 TRAIN_1_DATA_PATH = "./data/wv_h580_train1_350000-160-160.npz"
 TRAIN_2_DATA_PATH = "./data/wv_h580_train2_350000-160-160.npz"
 TEST_DATA_PATH = "./data/wv_h580_test_69969-160-160.npz"
 
 
+# Dataset preprocessing
 class MaxwellFDFDDataset(Dataset):
     def __init__(self, data_image, data_wv, target, transform=None):
-
         data_image = np.true_divide(data_image, 116).astype(np.uint8)
         self.data_image = torch.from_numpy(data_image).float()
         self.data_wv = torch.from_numpy(data_wv).float()
@@ -47,7 +40,6 @@ class MaxwellFDFDDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
-print('Converting to TorchDataset...')\
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -77,15 +69,11 @@ if __name__ == '__main__':
 
     # TEST
     # args.unit_test = True
-    args.debug = True
+    # args.debug = True
     # args.max_epoch = 1
 
     # Hyper parameters
-    # num_epochs = 10
     num_classes = 4
-    # batch_size = 128
-    # learning_rate = 0.001
-
     model_name = args.model
     batch_size = int(args.batch_size)
     num_epochs = int(args.max_epoch)
@@ -93,8 +81,6 @@ if __name__ == '__main__':
     learning_rate = args.learning_rate
 
     img_rows, img_cols, channels = 160, 160, 1
-
-
 
     print('Data Loading... dataset Start.')
     if args.unit_test:
@@ -116,16 +102,14 @@ if __name__ == '__main__':
         x_test = test_data['wv']
         y_test = test_data['y']
     else:
-        print('use 7x (train set * 7)')
+        print('use 8x (train set * 8)')
         train_1_data = np.load(TRAIN_1_DATA_PATH)
 
         train_2_data = np.load(TRAIN_2_DATA_PATH)
 
         test_data = np.load(TEST_DATA_PATH)
         print('keys : ', train_1_data.files)
-
         print('keys 2: ', train_2_data.files)
-
         print('keys test: ', test_data.files)
 
         x_train_image = train_1_data['xtrain']
@@ -139,7 +123,6 @@ if __name__ == '__main__':
         print('preprocess2 start')
         x_train_image_2 = train_2_data['xtrain']
         x_train_image_2 = x_train_image_2.astype(np.uint8)
-        # x_train_image_2 = np.true_divide(x_train_image_2, 116).astype(np.uint8)
         print('preprocess2 end')
 
         x_train_image = np.append(x_train_image, x_train_image_2, axis=0)
@@ -150,7 +133,6 @@ if __name__ == '__main__':
 
         print('preprocess3 start')
         x_validation_image = x_validation_image.astype(np.uint8)
-        # x_validation_image = np.true_divide(x_validation_image, 116).astype(np.uint8)
         print('preprocess3 end')
 
         x_validation = train_1_data['wvtest']
@@ -159,7 +141,6 @@ if __name__ == '__main__':
         print('preprocess4 start')
         x_validation_image_2 = train_2_data['xtest']
         x_validation_image_2 = x_validation_image_2.astype(np.uint8)
-        # x_validation_image_2 = np.true_divide(x_validation_image_2, 116).astype(np.uint8)
         print('preprocess4 end')
 
         x_validation_image = np.append(x_validation_image, x_validation_image_2, axis=0)
@@ -169,7 +150,6 @@ if __name__ == '__main__':
         x_test_image = test_data['image']
         print('preprocess5 start')
         x_test_image = x_test_image.astype(np.uint8)
-        # x_test_image = np.true_divide(x_test_image, 116).astype(np.uint8)
         print('preprocess5 end')
         x_test = test_data['wv']
         y_test = test_data['y']
@@ -184,7 +164,6 @@ if __name__ == '__main__':
 
     print('Training model args : batch_size={}, max_epoch={}, lr={}, loss_function={}'
           .format(args.batch_size, args.max_epoch, args.learning_rate, args.loss_function))
-
 
     # of train, test set
     n_train = len(y_train)
@@ -265,14 +244,15 @@ if __name__ == '__main__':
                                                shuffle=True)
 
     valid_loader = torch.utils.data.DataLoader(dataset=valid_set,
-                                              batch_size=batch_size,
-                                              shuffle=False)
+                                               batch_size=batch_size,
+                                               shuffle=False)
 
     test_loader = torch.utils.data.DataLoader(dataset=test_set,
                                               batch_size=batch_size,
                                               shuffle=False)
 
-    # Convolutional neural network (two convolutional layers)
+
+    # Convolutional neural network (4 convolutional layers)
     class ConvNet(nn.Module):
         def __init__(self, num_classes=24):
             super(ConvNet, self).__init__()
@@ -312,7 +292,6 @@ if __name__ == '__main__':
     model = ConvNet(num_classes).to(device)
 
     # Loss and optimizer
-    # criterion = nn.CrossEntropyLoss()
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -321,7 +300,7 @@ if __name__ == '__main__':
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True)
 
     # Early Stopping
-    early_stopping = EarlyStopping(patience=10, verbose = True)
+    early_stopping = EarlyStopping(patience=10, verbose=True)
 
     # Train the model
     total_step = len(train_loader)
@@ -368,7 +347,6 @@ if __name__ == '__main__':
 
         train_loss_array.append(train_loss / count)
 
-
         # Validate the model
         # Test the model
         model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
@@ -394,12 +372,12 @@ if __name__ == '__main__':
             r2 = r2_score(y_true=labels_array, y_pred=pred_array)
             val_loss_array.append(val_loss)
 
-            print('Validation Accuracy of the model on the {} validation images, loss: {:.4f}, R^2 : {:.4f} '.format(total, val_loss, r2))
+            print('Validation Accuracy of the model on the {} validation images, loss: {:.4f}, R^2 : {:.4f} '.format(
+                total, val_loss, r2))
 
             early_stopping(val_loss, model)
 
             scheduler.step(val_loss)
-
 
         if early_stopping.early_stop:
             print("Early stopping")
@@ -423,7 +401,6 @@ if __name__ == '__main__':
             labels_array.extend(labels.cpu().numpy().reshape(-1))
             total += labels.size(0)
 
-
         pred_array = np.array(pred_array)
         labels_array = np.array(labels_array)
 
@@ -432,12 +409,13 @@ if __name__ == '__main__':
         print('labels array shape: {}, pred array shape: {}'.format(labels_array.shape, pred_array.shape))
         test_rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
         test_r2 = r2_score(y_true=labels_array, y_pred=pred_array)
-        print('Test Accuracy of the model on the {} test images, loss: {:.4f}, R^2 : {:.4f} '.format(total, test_rmse, test_r2))
+        print('Test Accuracy of the model on the {} test images, loss: {:.4f}, R^2 : {:.4f} '.format(total, test_rmse,
+                                                                                                     test_r2))
 
     # Save the model checkpoint
-    model_file_name = '{}/model-{:.4f}-{:.4f}-ep{}-lr{}.ckpt'.format(torch_model_folder, test_rmse, test_r2, num_epochs, learning_rate)
+    model_file_name = '{}/model-{:.4f}-{:.4f}-ep{}-lr{}.ckpt'.format(torch_model_folder, test_rmse, test_r2, num_epochs,
+                                                                     learning_rate)
     torch.save(model.state_dict(), model_file_name)
-
 
     # Save learning curve
     plt.clf()
@@ -447,6 +425,7 @@ if __name__ == '__main__':
     plt.ylabel('Loss')
     plt.title('Model - Loss')
     plt.legend(['Training', 'Validation'], loc='upper right')
-    log_curve_file_name = '{}/log-curve-{:.4f}-{:.4f}-ep{}-lr{}.png'.format(torch_loss_folder, test_rmse, test_r2, num_epochs,
-                                                                             learning_rate)
+    log_curve_file_name = '{}/log-curve-{:.4f}-{:.4f}-ep{}-lr{}.png'.format(torch_loss_folder, test_rmse, test_r2,
+                                                                            num_epochs,
+                                                                            learning_rate)
     plt.savefig(log_curve_file_name)
