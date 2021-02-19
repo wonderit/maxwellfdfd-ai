@@ -548,110 +548,6 @@ if __name__ == '__main__':
             else:
                 optimizer = Adam(lr=args.learning_rate)
 
-            #
-            # # set training loop manually
-            # train_dataset = tf.data.Dataset.from_tensor_slices((input_L_x, L_y))
-            # train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
-            # features, labels = next(iter(train_dataset))
-            #
-            # # model = create_model(model_name, input_shape, optimizer, wd)
-            # # model.add(Conv2D(16, kernel_size=(3, 3), padding='same', input_shape=model_input_shape,
-            # #                  use_bias=False, kernel_regularizer=tf.keras.regularizers.l2(l2)))
-            # # model.add(Activation('relu'))
-            # # model.add(MaxPooling2D(pool_size=(2, 2)))
-            # # model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False,
-            # #                  kernel_regularizer=tf.keras.regularizers.l2(l2)))
-            # # model.add(Activation('relu'))
-            # # model.add(MaxPooling2D(pool_size=(2, 2)))
-            # # model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False,
-            # #                  kernel_regularizer=tf.keras.regularizers.l2(l2)))
-            # # model.add(Activation('relu'))
-            # # model.add(MaxPooling2D(pool_size=(2, 2)))
-            # # model.add(Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False,
-            # #                  kernel_regularizer=tf.keras.regularizers.l2(l2)))
-            # # model.add(Activation('relu'))
-            # # model.add(MaxPooling2D(pool_size=(2, 2)))
-            # # model.add(Flatten())
-            # # model.add(Dense(1024, activation='relu',
-            # #                 kernel_regularizer=tf.keras.regularizers.l2(l2),
-            # #                 activity_regularizer=tf.keras.regularizers.l2(l2)))
-            # # model.add(Dropout(0.4))
-            # # model.add(Dense(24, activation='sigmoid', kernel_regularizer=tf.keras.regularizers.l2(l2),
-            # #                 activity_regularizer=tf.keras.regularizers.l2(l2)))
-            #
-            #
-            # inputs = keras.Input(shape=(100, 200, 1), name="digits")
-            # x = Conv2D(16, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(inputs)
-            # x = MaxPooling2D(pool_size=(2,2))(x)
-            # x = Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(x)
-            # x = MaxPooling2D(pool_size=(2, 2))(x)
-            # x = Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(x)
-            # x = MaxPooling2D(pool_size=(2,2))(x)
-            # x = Conv2D(32, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(x)
-            # x = MaxPooling2D(pool_size=(2, 2))(x)
-            # x = Flatten()(x)
-            # x = Dense(1024, activation="relu", name="dense_1")(x)
-            # x = Dropout(0.4)(x)
-            # outputs = Dense(24, activation="sigmoid", name="predictions")(x)
-            # model = keras.Model(inputs=inputs, outputs=outputs)
-            #
-            # model.compile(loss=new_loss(inputs), optimizer=Adam(lr=0.001))
-            # # loss_fn = keras.losses.mean_squared_error
-            #
-            # # Prepare the metrics.
-            # train_acc_metric = tfa.metrics.r_square
-            # val_acc_metric = tfa.metrics.r_square
-            # @tf.function
-            # def train_step(x, y, _prev_model):
-            #     with tf.GradientTape() as tape:
-            #         y_pred = model(x, training=True)
-            #         loss_value = K.mean(K.square(y, y_pred))
-            #     grads = tape.gradient(loss_value, model.trainable_weights)
-            #     optimizer.apply_gradients(zip(grads, model.trainable_weights))
-            #     train_acc_metric.update_state(y, y_pred)
-            #     return loss_value
-            #
-            #
-            # @tf.function
-            # def test_step(x, y):
-            #     val_logits = model(x, training=False)
-            #     val_acc_metric.update_state(y, val_logits)
-            #
-            # print(features)
-            # for epoch in range(epochs):
-            #     print("\nStart of epoch %d" % (epoch,))
-            #     start_time = time.time()
-            #
-            #     # Iterate over the batches of the dataset.
-            #     for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
-            #         loss_value = train_step(x_batch_train, y_batch_train, prev_model)
-            #
-            #         # Log every 200 batches.
-            #         if step % 200 == 0:
-            #             print(
-            #                 "Training loss (for one batch) at step %d: %.4f"
-            #                 % (step, float(loss_value))
-            #             )
-            #             print("Seen so far: %d samples" % ((step + 1) * 64))
-            #
-            #     # Display metrics at the end of each epoch.
-            #     train_acc = train_acc_metric.result()
-            #     print("Training acc over epoch: %.4f" % (float(train_acc),))
-            #
-            #     # Reset training metrics at the end of each epoch
-            #     train_acc_metric.reset_states()
-            #
-            #     # Run a validation loop at the end of each epoch.
-            #     for x_batch_val, y_batch_val in val_dataset:
-            #         test_step(x_batch_val, y_batch_val)
-            #
-            #     val_acc = val_acc_metric.result()
-            #     val_acc_metric.reset_states()
-            #     print("Validation acc: %.4f" % (float(val_acc),))
-            #     print("Time taken: %.2fs" % (time.time() - start_time))
-            #
-            # exit()
-
             inputs = keras.Input(shape=(100, 200, 1), name="digits")
             x = Conv2D(16, kernel_size=(3, 3), padding='same', use_bias=False, activation='relu')(inputs)
             x = MaxPooling2D(pool_size=(2, 2))(x)
@@ -668,7 +564,6 @@ if __name__ == '__main__':
             model = keras.Model(inputs=inputs, outputs=outputs)
 
             temp_x = tf.Variable(0, trainable=False)
-
 
             def new_loss(noise):
                 def loss(y_true, y_pred):

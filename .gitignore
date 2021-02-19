@@ -170,3 +170,5 @@ models*/
 data.zip
 models_paper*.zip
 pip-dependency/
+circles/torch/
+circles/*.txt
