@@ -1,17 +1,14 @@
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.data import Dataset
+from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
+from sklearn.metrics import r2_score, mean_squared_error
+from pytorchtools import EarlyStopping
+import matplotlib.pyplot as plt
 import numpy as np
 import argparse
-from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 import os
-from sklearn.metrics import r2_score, mean_squared_error
-
-from torch.utils.data import Dataset
-import matplotlib.pyplot as plt
-
-from pytorchtools import EarlyStopping
 
 # Device configuration
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -52,7 +49,6 @@ if __name__ == '__main__':
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
-    #
     parser.add_argument("-tr", "--n_train", help="Set train set number", type=int, default=1000)
     parser.add_argument("-te", "--n_test", help="Set test set", type=int, default=100)
     parser.add_argument("-oe", "--is_ordinal_encoding", help="flag for ordinal encoding 'a'", action='store_true')
@@ -112,7 +108,8 @@ if __name__ == '__main__':
     x_test_image = test_data['image']
     x_test = test_data['wv']
     y_test = test_data['y']
-    print('Train, Valid, Test Data Loading finished (shape : train/valid/test > {}/{}/{})'.format(len(y_train), len(y_validation), len(y_test)))
+    print('Train, Valid, Test Data Loading finished (shape : train/valid/test > {}/{}/{})'
+          .format(len(y_train), len(y_validation), len(y_test)))
 
     print('Training model args : batch_size={}, max_epoch={}, lr={}, loss_function={}'
           .format(args.batch_size, args.max_epoch, args.learning_rate, args.loss_function))
@@ -209,20 +206,19 @@ if __name__ == '__main__':
         def __init__(self, num_classes=24):
             super(ConvNet, self).__init__()
             self.layer1 = nn.Sequential(
-                nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1),
-                # nn.BatchNorm2d(16),
+                nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.layer2 = nn.Sequential(
-                nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.layer3 = nn.Sequential(
-                nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.layer4 = nn.Sequential(
-                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             # self.fc1 = nn.Linear(4608, 1024)
@@ -230,28 +226,16 @@ if __name__ == '__main__':
             self.fc1 = nn.Linear(6401, 1024, bias=True)
             self.fc2 = nn.Linear(1024, num_classes)
             # nn layers
-            self.linear1 = nn.Linear(6401, 256, bias=True)
-            # linear2 = nn.Linear(2048, 1024, bias=True)
-            # linear3 = nn.Linear(1024, 256, bias=True)
-            self.linear4 = nn.Linear(256, 16, bias=True)
-            # linear5 = nn.Linear(64, 16, bias=True)
+            self.linear1 = nn.Linear(6401, 2048, bias=True)
+            self.linear2 = nn.Linear(2048, 1024, bias=True)
+            self.linear3 = nn.Linear(1024, 256, bias=True)
+            self.linear4 = nn.Linear(256, 64, bias=True)
+            self.linear5 = nn.Linear(64, 16, bias=True)
             self.linear6 = nn.Linear(16, num_classes, bias=True)
             self.relu = nn.ReLU()
             self.dropout = nn.Dropout(p=0.4)
 
-            self.fc_layer = nn.Sequential(
-                self.linear1, self.relu, self.dropout,
-                # linear2, relu, linear3, relu,
-                self.linear4, self.relu,
-                self.linear6
-            )
-            self.fc_layer2 = nn.Sequential(
-                self.fc1, self.relu, self.dropout,
-                self.fc2,
-            )
-
         def forward(self, x, x_wv):
-            # print('input shape : ', x.shape)
             out = self.layer1(x)
             out = self.layer2(out)
             out = self.layer3(out)
@@ -259,29 +243,25 @@ if __name__ == '__main__':
             out = out.reshape(out.size(0), -1)
 
             # add wv param
-
             out = torch.cat((out, x_wv), dim=1)
-            out = self.fc_layer2(out)
-            # out = F.sigmoid(out)
-            # out = F.relu(self.fc1(out))
-            # out = self.dropout(out)
-            # out = F.relu(self.fc2(out))
-            # out = F.relu(self.fc3(out))
-            # out = F.relu(self.fc4(out))
-            # out = F.relu(self.fc5(out))
-            # out = torch.sigmoid(self.fc6(out))
-
+            out = F.relu(self.linear1(out))
+            out = self.dropout(out)
+            out = F.relu(self.linear2(out))
+            out = F.relu(self.linear3(out))
+            out = F.relu(self.linear4(out))
+            out = F.relu(self.linear5(out))
+            out = self.linear6(out)
+            out = torch.sigmoid(out)
             return out
 
 
     model = ConvNet(num_classes).to(device)
 
     # Loss and optimizer
-    criterion = nn.MSELoss().to(device)
+    criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # Lr scheduler
-    # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch, verbose=True)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True)
 
     # Early Stopping
@@ -318,8 +298,8 @@ if __name__ == '__main__':
 
             # Forward pass
             outputs = model(images, waves)
-            loss = torch.sqrt(criterion(outputs, labels))
-
+            eps = 1e-6
+            loss = torch.sqrt(criterion(outputs, labels) + eps)
             loss.backward()
 
             optimizer.step()
@@ -334,8 +314,7 @@ if __name__ == '__main__':
         train_loss_array.append(train_loss / count)
 
         # Validate the model
-        # Test the model
-        model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
+        model.eval()
         with torch.no_grad():
             total = 0
             pred_array = []
@@ -372,8 +351,7 @@ if __name__ == '__main__':
             break
 
     # Test the model
-    model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
-
+    model.eval()
     test_r2 = 0
     test_rmse = 0
     with torch.no_grad():
