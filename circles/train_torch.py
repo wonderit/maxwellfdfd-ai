@@ -262,8 +262,6 @@ if __name__ == '__main__':
                 nn.MaxPool2d(kernel_size=2, stride=2))
             # self.fc1 = nn.Linear(4608, 1024)
 
-            self.fc1 = nn.Linear(6401, 1024, bias=True)
-            self.fc2 = nn.Linear(1024, num_classes)
             # nn layers
             self.linear1 = nn.Linear(6401, 2048, bias=True)
             self.linear2 = nn.Linear(2048, 1024, bias=True)
@@ -290,13 +288,9 @@ if __name__ == '__main__':
             out = F.relu(self.linear1(out))
             out = self.dropout40(out)
             out = F.relu(self.linear2(out))
-            out = self.dropout20(out)
             out = F.relu(self.linear3(out))
-            out = self.dropout20(out)
             out = F.relu(self.linear4(out))
-            out = self.dropout20(out)
             out = F.relu(self.linear5(out))
-            out = self.dropout20(out)
             out = self.linear6(out)
             out = torch.sigmoid(out)
             return out
@@ -374,7 +368,8 @@ if __name__ == '__main__':
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
             # Lr scheduler
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True)
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=4, factor=0.5,
+                                                                   min_lr=learning_rate * 0.001, verbose=True)
 
             # Early Stopping
             early_stopping = EarlyStopping(patience=8, verbose=True)
