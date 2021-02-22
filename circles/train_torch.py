@@ -54,7 +54,7 @@ if __name__ == '__main__':
     parser.add_argument("-oe", "--is_ordinal_encoding", help="flag for ordinal encoding 'a'", action='store_true')
     parser.add_argument("-oh", "--is_onehot_encoding", help="flag for onehot encoding 'a'", action='store_true')
 
-    # arg for testing parameters
+    # arg for testing parameters-oe
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
 
@@ -363,6 +363,11 @@ if __name__ == '__main__':
 
             model = ConvNet(num_classes).to(device)
 
+            # Initialize weights
+            if args.remember_model and prev_model is not None:
+                print('Initializing model with previous model 0')
+                model.set_weights(prev_model.get_weights())
+
             # Loss and optimizer
             criterion = nn.MSELoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -475,6 +480,10 @@ if __name__ == '__main__':
                                                                              learning_rate)
             torch.save(model.state_dict(), model_file_name)
 
+            if args.remember_model and m == 0:
+                print('ITERATION : {}, prev model updated'.format(i))
+                prev_model = model
+
             # Save learning curve
             plt.clf()
             plt.plot(train_loss_array)
@@ -492,3 +501,51 @@ if __name__ == '__main__':
                                                                                             learning_rate
                                                                                              )
             plt.savefig(log_curve_file_name)
+
+            #AL start
+            if not args.is_active_random and args.is_active_learning:
+                active_set = MaxwellFDFDDataset(U_x_image, U_x, U_y, transform=False)
+                # Data loader
+                active_loader = torch.utils.data.DataLoader(dataset=active_set,
+                                                           batch_size=batch_size,
+                                                           shuffle=False)
+
+                with torch.no_grad():
+                    x_pr_active = []
+                    for (active_images, active_waves, active_labels) in active_loader:
+                        torch_U_x_image = active_images.to(device)
+                        torch_U_x = active_waves.to(device)
+                        predict_from_model = model(torch_U_x_image, torch_U_x)
+                        np_pred = predict_from_model.cpu().data.numpy()
+                        x_pr_active.extend(np_pred)
+                    x_pr_active = np.array(x_pr_active)
+                    X_pr.append(x_pr_active)
+
+        if not args.is_active_random:
+            X_pr = np.array(X_pr)
+
+            # Ascending order Sorted
+            rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
+            rpo_array_sum = np.sum(rpo_array, axis=1)
+            rpo_array_arg_sort = np.argsort(rpo_array_sum)
+            rpo_array_sort = np.sort(rpo_array_sum)
+
+            # add labeled to L_iter
+            T_indices = int(len(x_train) * args.labeled_ratio * args.top_ratio)
+            U_length = len(rpo_array_arg_sort) - T_indices
+            U_indices = rpo_array_arg_sort[:U_length]
+            L_indices = rpo_array_arg_sort[U_length:]
+
+            L_x = np.append(L_x, U_x[L_indices], axis=0)
+            L_x_image = np.append(L_x_image, U_x_image[L_indices], axis=0)
+            L_y = np.append(L_y, U_y[L_indices], axis=0)
+
+            U_x = U_x[U_indices]
+            U_x_image = U_x_image[U_indices]
+            U_y = U_y[U_indices]
+
+            # shuffle Labeled data
+        shuffle_index = np.random.permutation(len(L_x))
+        L_x = L_x[shuffle_index]
+        L_x_image = L_x_image[shuffle_index]
+        L_y = L_y[shuffle_index]
