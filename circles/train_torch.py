@@ -269,12 +269,7 @@ if __name__ == '__main__':
             self.linear4 = nn.Linear(256, 64, bias=True)
             self.linear5 = nn.Linear(64, 16, bias=True)
             self.linear6 = nn.Linear(16, num_classes, bias=True)
-            # self.linear6 = nn.Linear(64, num_classes, bias=True)
-            self.relu = nn.ReLU()
-            self.dropout20 = nn.Dropout(p=0.2)
             self.dropout40 = nn.Dropout(p=0.4)
-            self.dropout1 = nn.Dropout(p=0.2)
-            self.dropout2 = nn.Dropout(p=0.2)
 
         def forward(self, x, x_wv):
             out = self.layer1(x)
@@ -303,6 +298,11 @@ if __name__ == '__main__':
         log_folder = 'torch/al_random_tr{}_te{}_n{}_b{}_e{}_it{}'.format(
             n_train, n_test, args.num_models, batch_size, num_epochs, args.iteration
         )
+
+    if args.remember_model:
+        log_folder = 'torch/al_remember_tr{}_te{}_n{}_b{}_e{}_it{}'.format(
+            n_train, n_test, args.num_models, batch_size, num_epochs, args.iteration
+        )
     torch_loss_folder = '{}/train_progress'.format(log_folder)
     torch_model_folder = '{}/model'.format(log_folder)
 
@@ -316,6 +316,7 @@ if __name__ == '__main__':
         os.makedirs(torch_model_folder)
 
     prev_model = None
+    prev_model_path = 'prev_model.pth'
     for iter_i in range(ITERATION):
         print('Training Iteration : {}, Labeled dataset size : {}'.format(iter_i + 1, L_x.shape[0]))
         X_pr = []
@@ -366,7 +367,9 @@ if __name__ == '__main__':
             # Initialize weights
             if args.remember_model and prev_model is not None:
                 print('Initializing model with previous model 0')
-                model.set_weights(prev_model.get_weights())
+                model.load_state_dict(torch.load(prev_model_path))
+                model.train()
+                # model.set_weights(prev_model.get_weights())
 
             # Loss and optimizer
             criterion = nn.MSELoss()
@@ -481,7 +484,8 @@ if __name__ == '__main__':
             torch.save(model.state_dict(), model_file_name)
 
             if args.remember_model and m == 0:
-                print('ITERATION : {}, prev model updated'.format(i))
+                print('ITERATION : {}, prev model updated'.format(iter_i))
+                torch.save(model.state_dict(), prev_model_path)
                 prev_model = model
 
             # Save learning curve
