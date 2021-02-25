@@ -126,13 +126,6 @@ if __name__ == '__main__':
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
-    # arg for AL
-    parser.add_argument("-it", "--iteration", help="Set iteration for training", type=int, default=1)
-    parser.add_argument("-n", "--num_models", help="Set number of models for evaluation", type=int, default=3)
-    parser.add_argument("-a", "--is_active_learning", help="Set is Active Learning", action='store_true')
-    parser.add_argument("-ar", "--is_active_random", help="Set is Active random result", action='store_true')
-    parser.add_argument("-r", "--labeled_ratio", help="Set R", type=float, default=0.2)
-    parser.add_argument("-t", "--top_ratio", help="Set T", type=float, default=0.1)
 
     # arg for testing parameters
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
@@ -141,12 +134,6 @@ if __name__ == '__main__':
     # arg for rpo lossfunction
     parser.add_argument("-dl", "--is_different_losses", action='store_true')
     parser.add_argument("-dm", "--is_different_models", action='store_true')
-
-    # arg for weight decay scheduling
-    parser.add_argument("-ws", "--weight_schedule_factor", type=float, default=0)
-    parser.add_argument("-wd", "--weight_decay_factor", type=float, default=0)
-    parser.add_argument("-rm", "--remember_model", action='store_true')
-    parser.add_argument("-tor", "--teacher_outlier_rejection", action='store_true')
 
     parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
     # arg for AL
@@ -160,14 +147,15 @@ if __name__ == '__main__':
     # arg for KD
     parser.add_argument("-rm", "--remember_model", action='store_true')
     parser.add_argument("-tor", "--teacher_outlier_rejection", action='store_true')
+    # arg for rpo type
+    parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff)", default='max_diff')
     args = parser.parse_args()
 
     # TEST
     # args.unit_test = True
-    args.debug = True
-    args.teacher_outlier_rejection = True
+    # args.debug = True
     # args.max_epoch = 1
-    args.is_active_learning = True
+    # args.is_active_learning = True
 
     # Hyper parameters
     # num_epochs = 10
@@ -180,6 +168,7 @@ if __name__ == '__main__':
     num_epochs = int(args.max_epoch)
     loss_functions = args.loss_function
     learning_rate = args.learning_rate
+    num_models = args.num_models
 
     img_rows, img_cols, channels = 100, 200, 1
 
