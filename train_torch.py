@@ -422,7 +422,6 @@ if __name__ == '__main__':
                 print('Initializing model with previous model 0')
                 model.load_state_dict(torch.load(prev_model_path))
                 model.train()
-                # model.set_weights(prev_model.get_weights())
 
             # Loss and optimizer
             criterion = nn.MSELoss()
