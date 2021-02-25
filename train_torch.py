@@ -429,7 +429,7 @@ if __name__ == '__main__':
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
             # Lr scheduler
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=4, factor=0.5,
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
                                                                    min_lr=learning_rate * 0.001, verbose=True)
 
             # Early Stopping
