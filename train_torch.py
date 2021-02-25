@@ -115,7 +115,29 @@ class MaxwellFDFDDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
-print('Converting to TorchDataset...')\
+
+def scatter_plot(y_true, y_pred, message, result_path, iter_number, model_number):
+    result = np.column_stack((y_true,y_pred))
+
+    if not os.path.exists('{}/{}'.format(result_path, 'csv')):
+        os.makedirs('{}/{}'.format(result_path, 'csv'))
+
+    if not os.path.exists('{}/{}'.format(result_path, 'scatter')):
+        os.makedirs('{}/{}'.format(result_path, 'scatter'))
+
+    pd.DataFrame(result).to_csv("{}/csv/{}_{}.csv".format(result_path, iter_number, model_number), index=False)
+
+    plt.scatter(y_pred, y_true, s=3)
+    plt.suptitle(message)
+    plt.xlabel('Predictions')
+    plt.ylabel('Actual')
+    plt.savefig("{}/scatter/{}_{}.png".format(result_path, iter_number, model_number))
+    plt.clf()
+    # plt.show()
+
+
+print('Converting to TorchDataset...')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -485,7 +507,7 @@ if __name__ == '__main__':
                     pred_array = pred_array.reshape(-1)
                     labels_array = labels_array.reshape(-1)
                     val_loss = np.sqrt(mean_squared_error(labels_array, pred_array))
-                    r2 = r2_score(y_true=labels_array, y_pred=pred_array)
+                    r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
                     val_loss_array.append(val_loss)
 
                     print('Validation Accuracy of the model on the {} validation images, loss: {:.4f}, R^2 : {:.4f} '.format(total, val_loss, r2))
@@ -523,8 +545,9 @@ if __name__ == '__main__':
                 labels_array = labels_array.reshape(-1)
                 print('labels array shape: {}, pred array shape: {}'.format(labels_array.shape, pred_array.shape))
                 test_rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
-                test_r2 = r2_score(y_true=labels_array, y_pred=pred_array)
+                test_r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
                 print('Test Accuracy of the model on the {} test images, loss: {:.4f}, R^2 : {:.4f} '.format(total, test_rmse, test_r2))
+                scatter_plot(labels_array, pred_array, 'RMSE: {:.4f}, R^2: {:4f}'.format(test_rmse, test_r2), result_path=log_folder, iter_i, m)
 
             # Save the model checkpoint
             model_file_name = '{}/model_it{}_m{}-{:.4f}-{:.4f}-ep{}-lr{}.ckpt'.format(torch_model_folder, iter_i, m,
