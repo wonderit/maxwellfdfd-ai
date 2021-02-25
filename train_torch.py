@@ -127,12 +127,12 @@ def scatter_plot(y_true, y_pred, message, result_path, iter_number, model_number
 
     pd.DataFrame(result).to_csv("{}/csv/{}_{}.csv".format(result_path, iter_number, model_number), index=False)
 
+    plt.clf()
     plt.scatter(y_pred, y_true, s=3)
     plt.suptitle(message)
     plt.xlabel('Predictions')
     plt.ylabel('Actual')
     plt.savefig("{}/scatter/{}_{}.png".format(result_path, iter_number, model_number))
-    plt.clf()
     # plt.show()
 
 
