@@ -71,9 +71,9 @@ if gpus:
         print(e)
 
 ## TRAIN
-TRAIN_1_DATA_PATH = "./data/wv_h580_train1_350000-160-160.npz"
-TRAIN_2_DATA_PATH = "./data/wv_h580_train2_350000-160-160.npz"
-TEST_DATA_PATH = "./data/wv_h580_test_69969-160-160.npz"
+TRAIN_1_DATA_PATH = "./data/train1_350000-160-160.npz"
+TRAIN_2_DATA_PATH = "./data/train2_350000-160-160.npz"
+TEST_DATA_PATH = "./data/test_69969-160-160.npz"
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
