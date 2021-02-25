@@ -315,8 +315,8 @@ if __name__ == '__main__':
     parser.add_argument("-dm", "--is_different_models", action='store_true')
 
     # arg for weight decay scheduling
-    parser.add_argument("-ws", "--weight_schedule_factor", type=float, default=5e-6)
-    parser.add_argument("-wd", "--weight_decay_factor", type=float, default=5e-5)
+    parser.add_argument("-ws", "--weight_schedule_factor", type=float, default=0) #5e-6
+    parser.add_argument("-wd", "--weight_decay_factor", type=float, default=0) #5e-5
     parser.add_argument("-rm", "--remember_model", action='store_true')
 
     parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
