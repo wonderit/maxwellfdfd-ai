@@ -75,6 +75,9 @@ if __name__ == '__main__':
     parser.add_argument("-rm", "--remember_model", action='store_true')
     parser.add_argument("-tor", "--teacher_outlier_rejection", action='store_true')
 
+    # arg for rpo type
+    parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff)", default='max_diff')
+
     args = parser.parse_args()
 
     # TEST
@@ -291,8 +294,8 @@ if __name__ == '__main__':
             return out
 
     # create loss log folder
-    log_folder = 'torch/al_tr{}_te{}_n{}_b{}_e{}_it{}_R{}'.format(
-        n_train, n_test, args.num_models, batch_size, num_epochs, args.iteration,  args.labeled_ratio
+    log_folder = 'torch/al_{}_tr{}_te{}_n{}_b{}_e{}_it{}_R{}'.format(
+        args.rpo_type, n_train, n_test, args.num_models, batch_size, num_epochs, args.iteration,  args.labeled_ratio
     )
     if args.is_active_random:
         log_folder = 'torch/al_random_tr{}_te{}_n{}_b{}_e{}_it{}_R{}'.format(
@@ -300,8 +303,8 @@ if __name__ == '__main__':
         )
 
     if args.remember_model:
-        log_folder = 'torch/al_remember_tr{}_te{}_n{}_b{}_e{}_it{}_R{}'.format(
-            n_train, n_test, args.num_models, batch_size, num_epochs, args.iteration,  args.labeled_ratio
+        log_folder = 'torch/al_remember_{}_tr{}_te{}_n{}_b{}_e{}_it{}_R{}'.format(
+            args.rpo_type, n_train, n_test, args.num_models, batch_size, num_epochs, args.iteration,  args.labeled_ratio
         )
     torch_loss_folder = '{}/train_progress'.format(log_folder)
     torch_model_folder = '{}/model'.format(log_folder)
@@ -531,8 +534,10 @@ if __name__ == '__main__':
             # Ascending order Sorted
             rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
             rpo_array_sum = np.sum(rpo_array, axis=1)
-            rpo_array_arg_sort = np.argsort(rpo_array_sum)
-            rpo_array_sort = np.sort(rpo_array_sum)
+            if args.rpo_type == 'max_diff':
+                rpo_array_arg_sort = np.argsort(rpo_array_sum)
+            else:
+                rpo_array_arg_sort = np.argsort(-rpo_array_sum)
 
             # add labeled to L_iter
             T_indices = int(len(x_train) * args.labeled_ratio * args.top_ratio)
