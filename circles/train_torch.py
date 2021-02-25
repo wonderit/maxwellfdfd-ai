@@ -437,7 +437,7 @@ if __name__ == '__main__':
                     pred_array = pred_array.reshape(-1)
                     labels_array = labels_array.reshape(-1)
                     val_loss = np.sqrt(mean_squared_error(labels_array, pred_array))
-                    print('array shape : labels - {}, pred - {}'.format(labels_array.shape, pred_array.shape))
+                    # print('array shape : labels - {}, pred - {}'.format(labels_array.shape, pred_array.shape))
                     r2 = r2_score(y_true=labels_array, y_pred=pred_array)
                     val_loss_array.append(val_loss)
 
@@ -495,8 +495,6 @@ if __name__ == '__main__':
             plt.clf()
             plt.plot(train_loss_array)
             plt.plot(val_loss_array)
-            print('train_loss_array')
-            print(train_loss_array)
             plt.xlabel('Epoch')
             plt.ylabel('Loss')
             plt.title('Model - Loss')
@@ -553,7 +551,7 @@ if __name__ == '__main__':
             U_x_image = U_x_image[U_indices]
             U_y = U_y[U_indices]
 
-            # shuffle Labeled data
+        # shuffle Labeled data
         shuffle_index = np.random.permutation(len(L_x))
         L_x = L_x[shuffle_index]
         L_x_image = L_x_image[shuffle_index]
