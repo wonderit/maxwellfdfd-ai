@@ -547,7 +547,11 @@ if __name__ == '__main__':
                 test_rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
                 test_r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
                 print('Test Accuracy of the model on the {} test images, loss: {:.4f}, R^2 : {:.4f} '.format(total, test_rmse, test_r2))
-                scatter_plot(labels_array, pred_array, 'RMSE: {:.4f}, R^2: {:4f}'.format(test_rmse, test_r2), result_path=log_folder, iter_i, m)
+                scatter_plot(y_true=labels_array, y_pred=pred_array,
+                             message='RMSE: {:.4f}, R^2: {:4f}'.format(test_rmse, test_r2),
+                             result_path=log_folder,
+                             iter_number=iter_i,
+                             model_number=m)
 
             # Save the model checkpoint
             model_file_name = '{}/model_it{}_m{}-{:.4f}-{:.4f}-ep{}-lr{}.ckpt'.format(torch_model_folder, iter_i, m,
