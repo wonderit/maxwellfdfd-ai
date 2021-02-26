@@ -369,17 +369,17 @@ if __name__ == '__main__':
 
         # create loss log folder
 
-    log_folder = 'torch/al_{}_n{}_b{}_e{}_it{}_R{}'.format(
-        args.rpo_type, args.num_models, batch_size, num_epochs, args.iteration, args.labeled_ratio
+    log_folder = 'torch/al_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
+        args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
     )
     if args.is_active_random:
-        log_folder = 'torch/al_random_n{}_b{}_e{}_it{}_R{}'.format(
-            args.num_models, batch_size, num_epochs, args.iteration, args.labeled_ratio
+        log_folder = 'torch/al_random_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
+            args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
         )
 
     if args.remember_model:
-        log_folder = 'torch/al_remember_{}_n{}_b{}_e{}_it{}_R{}'.format(
-            args.rpo_type, args.num_models, batch_size, num_epochs, args.iteration, args.labeled_ratio
+        log_folder = 'torch/al_remember_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
+            args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
         )
     torch_loss_folder = '{}/train_progress'.format(log_folder)
     torch_model_folder = '{}/model'.format(log_folder)
