@@ -520,8 +520,8 @@ if __name__ == '__main__':
                     pred_array = []
                     labels_array = []
                     for images, labels in valid_loader:
-                        images = images.to('cpu')
-                        labels = labels.to('cpu')
+                        images = images.to(device)
+                        labels = labels.to(device)
                         outputs = model(images)
 
                         pred_array.extend(outputs.cpu().numpy().reshape(-1))
@@ -535,9 +535,9 @@ if __name__ == '__main__':
                     pred_array = pred_array.reshape(-1)
                     labels_array = labels_array.reshape(-1)
                     print('isnan pred')
-                    print(np.isnan(pred_array))
+                    print(pred_array)
                     print('isnan labels')
-                    print(np.isnan(labels_array))
+                    print(labels_array)
                     # val_loss = torch.sqrt(mse_loss(outputs, labels))
                     val_loss = np.sqrt(mean_squared_error(labels_array, pred_array))
                     r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
@@ -563,8 +563,8 @@ if __name__ == '__main__':
                 pred_array = []
                 labels_array = []
                 for images, labels in test_loader:
-                    images = images.to('cpu')
-                    labels = labels.to('cpu')
+                    images = images.to(device)
+                    labels = labels.to(device)
                     outputs = model(images)
 
                     pred_array.extend(outputs.cpu().numpy().reshape(-1))
@@ -623,7 +623,7 @@ if __name__ == '__main__':
                 with torch.no_grad():
                     x_pr_active = []
                     for (active_images, active_labels) in active_loader:
-                        torch_U_x_image = active_images.to('cpu')
+                        torch_U_x_image = active_images.to(device)
                         predict_from_model = model(torch_U_x_image)
 
                         np_pred = predict_from_model.cpu().data.numpy()
