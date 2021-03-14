@@ -141,6 +141,9 @@ print('Converting to TorchDataset...')
 def mse_loss(input, target):
     return ((input - target) ** 2).sum() / input.data.nelement()
 
+def sqrt_loss(input, target):
+    return ((input-target) ** 0.5).sum() / input.data.nelement()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -490,7 +493,7 @@ if __name__ == '__main__':
                         z_flag_1 = ((mse_output_prev - mse_output_prev.mean())/mse_output_prev.std() ) > 3
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= 3
                         # print(z_score_mse_prev)
-                        loss = loss + z_flag_1 * torch.sqrt(outputs - outputs_prev) + z_flag_0 * mse_loss(outputs, labels)
+                        loss = loss + (z_flag_1 * sqrt_loss(outputs, outputs_prev) + z_flag_0 * mse_loss(outputs, labels)) * 0.5
 
                     # loss = torch.sqrt(criterion(outputs, labels))
 
