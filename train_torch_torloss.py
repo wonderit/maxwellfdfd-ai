@@ -425,11 +425,11 @@ if __name__ == '__main__':
                                                    shuffle=True)
 
         valid_loader = torch.utils.data.DataLoader(dataset=valid_set,
-                                                   batch_size=batch_size,
+                                                   batch_size=batch_size * 1000,
                                                    shuffle=False)
 
         test_loader = torch.utils.data.DataLoader(dataset=test_set,
-                                                  batch_size=batch_size,
+                                                  batch_size=batch_size * 1000,
                                                   shuffle=False)
 
         # Train model
@@ -524,12 +524,9 @@ if __name__ == '__main__':
                         labels = labels.to(device)
                         outputs = model(images)
 
-                        if device == 'cpu':
-                            pred_array.extend(outputs.cpu().numpy().reshape(-1))
-                            labels_array.extend(labels.cpu().numpy().reshape(-1))
-                        else:
-                            pred_array.extend(outputs.cuda().numpy().reshape(-1))
-                            labels_array.extend(labels.cuda().numpy().reshape(-1))
+                        pred_array.extend(outputs.cpu().numpy().reshape(-1))
+                        labels_array.extend(labels.cpu().numpy().reshape(-1))
+
                         total += labels.size(0)
 
                     pred_array = np.array(pred_array)
@@ -537,7 +534,8 @@ if __name__ == '__main__':
 
                     pred_array = pred_array.reshape(-1)
                     labels_array = labels_array.reshape(-1)
-                    val_loss = np.sqrt(mean_squared_error(labels_array, pred_array))
+                    val_loss = torch.sqrt(mse_loss(outputs, labels))
+                    # val_loss = np.sqrt(mean_squared_error(labels_array, pred_array))
                     r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
                     val_loss_array.append(val_loss)
 
@@ -565,12 +563,8 @@ if __name__ == '__main__':
                     labels = labels.to(device)
                     outputs = model(images)
 
-                    if device == 'cpu':
-                        pred_array.extend(outputs.cpu().numpy().reshape(-1))
-                        labels_array.extend(labels.cpu().numpy().reshape(-1))
-                    else:
-                        pred_array.extend(outputs.cuda().numpy().reshape(-1))
-                        labels_array.extend(labels.cuda().numpy().reshape(-1))
+                    pred_array.extend(outputs.cpu().numpy().reshape(-1))
+                    labels_array.extend(labels.cpu().numpy().reshape(-1))
 
                     total += labels.size(0)
 
@@ -580,7 +574,8 @@ if __name__ == '__main__':
                 pred_array = pred_array.reshape(-1)
                 labels_array = labels_array.reshape(-1)
                 print('labels array shape: {}, pred array shape: {}'.format(labels_array.shape, pred_array.shape))
-                test_rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
+                # test_rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
+                test_rmse = torch.sqrt(mse_loss(outputs, labels))
                 test_r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
                 print('Test Accuracy of the model on the {} test images, loss: {:.4f}, R^2 : {:.4f} '.format(total, test_rmse, test_r2))
                 scatter_plot(y_true=labels_array, y_pred=pred_array,
@@ -627,10 +622,7 @@ if __name__ == '__main__':
                         torch_U_x_image = active_images.to(device)
                         predict_from_model = model(torch_U_x_image)
 
-                        if device == 'cpu':
-                            np_pred = predict_from_model.cpu().data.numpy()
-                        else:
-                            np_pred = predict_from_model.cuda().data.numpy()
+                        np_pred = predict_from_model.cpu().data.numpy()
                         x_pr_active.extend(np_pred)
                     x_pr_active = np.array(x_pr_active)
                     X_pr.append(x_pr_active)
