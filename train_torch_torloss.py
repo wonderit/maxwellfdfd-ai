@@ -520,8 +520,8 @@ if __name__ == '__main__':
                     pred_array = []
                     labels_array = []
                     for images, labels in valid_loader:
-                        images = images.to(device)
-                        labels = labels.to(device)
+                        images = images.to('cpu')
+                        labels = labels.to('cpu')
                         outputs = model(images)
 
                         pred_array.extend(outputs.cpu().numpy().reshape(-1))
@@ -563,8 +563,8 @@ if __name__ == '__main__':
                 pred_array = []
                 labels_array = []
                 for images, labels in test_loader:
-                    images = images.to(device)
-                    labels = labels.to(device)
+                    images = images.to('cpu')
+                    labels = labels.to('cpu')
                     outputs = model(images)
 
                     pred_array.extend(outputs.cpu().numpy().reshape(-1))
@@ -623,7 +623,7 @@ if __name__ == '__main__':
                 with torch.no_grad():
                     x_pr_active = []
                     for (active_images, active_labels) in active_loader:
-                        torch_U_x_image = active_images.to(device)
+                        torch_U_x_image = active_images.to('cpu')
                         predict_from_model = model(torch_U_x_image)
 
                         np_pred = predict_from_model.cpu().data.numpy()
