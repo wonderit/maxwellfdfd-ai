@@ -150,7 +150,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", help="Select model type.", default="cnn")
     parser.add_argument("-s", "--shape", help="Select input image shape. (rectangle or square?)", default="rect")
-    parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="torloss")
+    parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="rmse")
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
@@ -376,8 +376,8 @@ if __name__ == '__main__':
 
         # create loss log folder
 
-    log_folder = 'torch/al_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-        args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
+    log_folder = 'torch/al_{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
+        args.loss_function, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
     )
     if args.is_active_random:
         log_folder = 'torch/al_random_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
@@ -385,13 +385,13 @@ if __name__ == '__main__':
         )
 
     if args.remember_model:
-        log_folder = 'torch/al_remember_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-            args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
+        log_folder = 'torch/al_remember_loss{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
+            args.loss_function, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
         )
 
     if args.teacher_outlier_rejection:
-        log_folder = 'torch/al_tor_z{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-            args.z_score, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
+        log_folder = 'torch/al_tor_{}_z{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
+            args.loss_function, args.z_score, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
         )
     torch_loss_folder = '{}/train_progress'.format(log_folder)
     torch_model_folder = '{}/model'.format(log_folder)
