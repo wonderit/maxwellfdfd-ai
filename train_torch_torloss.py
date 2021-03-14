@@ -446,7 +446,7 @@ if __name__ == '__main__':
 
 
             # Initialize weights
-            if args.remember_model and prev_model is not None:
+            if args.remember_model and prev_model is not None and iter_i > 0:
                 if args.teacher_outlier_rejection:
                     print('Get teacher model for tor loss')
                     prev_model = ConvNet(num_classes).to(device)
@@ -486,7 +486,7 @@ if __name__ == '__main__':
                     loss = torch.sqrt(mse_loss(outputs, labels)) * 0.5
 
 
-                    if args.teacher_outlier_rejection and prev_model is not None:
+                    if args.teacher_outlier_rejection and prev_model is not None and iter_i > 0:
                         print('go tor')
                         outputs_prev = prev_model(images)
                         mse_output_prev = mse_loss(outputs_prev, labels)
