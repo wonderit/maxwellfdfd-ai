@@ -27,11 +27,11 @@ print('Torch is running on Device : {}'.format(device))
 DATAPATH_TRAIN = os.path.join('data', 'train')
 DATASETS_TRAIN = [
     'binary_501',
-    # 'binary_502',
-    # 'binary_503',
-    # 'binary_504',
-    # 'binary_505',
-    # 'binary_506',
+    'binary_502',
+    'binary_503',
+    'binary_504',
+    'binary_505',
+    'binary_506',
     # 'binary_507',
     # 'binary_508',
     # 'binary_509',
@@ -524,8 +524,8 @@ if __name__ == '__main__':
                         labels = labels.to(device)
                         outputs = model(images)
 
-                        pred_array.extend(outputs.cpu().numpy().reshape(-1))
-                        labels_array.extend(labels.cpu().numpy().reshape(-1))
+                        pred_array.extend(outputs.to(device).numpy().reshape(-1))
+                        labels_array.extend(labels.to(device).numpy().reshape(-1))
                         total += labels.size(0)
 
                     pred_array = np.array(pred_array)
@@ -561,8 +561,8 @@ if __name__ == '__main__':
                     labels = labels.to(device)
                     outputs = model(images)
 
-                    pred_array.extend(outputs.cpu().numpy().reshape(-1))
-                    labels_array.extend(labels.cpu().numpy().reshape(-1))
+                    pred_array.extend(outputs.to(device).numpy().reshape(-1))
+                    labels_array.extend(labels.to(device).numpy().reshape(-1))
                     total += labels.size(0)
 
                 pred_array = np.array(pred_array)
@@ -617,7 +617,7 @@ if __name__ == '__main__':
                     for (active_images, active_labels) in active_loader:
                         torch_U_x_image = active_images.to(device)
                         predict_from_model = model(torch_U_x_image)
-                        np_pred = predict_from_model.cpu().data.numpy()
+                        np_pred = predict_from_model.to(device).data.numpy()
                         x_pr_active.extend(np_pred)
                     x_pr_active = np.array(x_pr_active)
                     X_pr.append(x_pr_active)
