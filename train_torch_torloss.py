@@ -494,7 +494,7 @@ if __name__ == '__main__':
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= 3
                         # print(z_score_mse_prev)
                         # loss = loss + (z_flag_1 * sqrt_loss(outputs, outputs_prev) + z_flag_0 * mse_loss(outputs, labels)) * 0.5
-                        loss = loss + 0.5 * (z_flag_1 * (outputs-outputs_prev)**0.5 + z_flag_0 * (outputs-labels)**2).sum()/outputs.data.nelement()
+                        loss = loss + 0.5 * (z_flag_1 * (outputs-outputs_prev)**0.5 + z_flag_0 * (outputs-labels)**2).mean()
 
                     # loss = torch.sqrt(criterion(outputs, labels))
 
@@ -534,6 +534,10 @@ if __name__ == '__main__':
 
                     pred_array = pred_array.reshape(-1)
                     labels_array = labels_array.reshape(-1)
+                    print('isnan pred')
+                    print(np.isnan(pred_array))
+                    print('isnan labels')
+                    print(np.isnan(labels_array))
                     # val_loss = torch.sqrt(mse_loss(outputs, labels))
                     val_loss = np.sqrt(mean_squared_error(labels_array, pred_array))
                     r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
