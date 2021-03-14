@@ -490,10 +490,11 @@ if __name__ == '__main__':
                         print('go tor')
                         outputs_prev = prev_model(images)
                         mse_output_prev = mse_loss(outputs_prev, labels)
-                        z_flag_1 = ((mse_output_prev - mse_output_prev.mean())/mse_output_prev.std() ) > 3
+                        z_flag_1 = ((mse_output_prev - mse_output_prev.mean())/mse_output_prev.std()) > 3
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= 3
                         # print(z_score_mse_prev)
-                        loss = loss + (z_flag_1 * sqrt_loss(outputs, outputs_prev) + z_flag_0 * mse_loss(outputs, labels)) * 0.5
+                        # loss = loss + (z_flag_1 * sqrt_loss(outputs, outputs_prev) + z_flag_0 * mse_loss(outputs, labels)) * 0.5
+                        loss = loss + 0.5 * (z_flag_1 * (outputs-outputs_prev)**0.5 + z_flag_0 * (outputs-labels)**2).sum()/outputs.data.nelement()
 
                     # loss = torch.sqrt(criterion(outputs, labels))
 
