@@ -602,7 +602,7 @@ if __name__ == '__main__':
             if args.remember_model and m == 0:
                 print('ITERATION : {}, prev model updated'.format(iter_i))
                 torch.save(model.state_dict(), prev_model_path)
-                prev_model = model
+                # prev_model = model
 
             # Save learning curve
             plt.clf()
