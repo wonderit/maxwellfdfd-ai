@@ -489,14 +489,15 @@ if __name__ == '__main__':
                     if args.teacher_outlier_rejection and prev_model is not None and iter_i > 0:
                         print('go tor')
                         outputs_prev = prev_model(images)
-                        print(outputs_prev.cpu().numpy())
-                        mse_output_prev = mse_loss(outputs_prev, labels)
+                        # mse_output_prev = mse_loss(outputs_prev, labels)
+                        mse_output_prev = (outputs_prev - labels) ** 2
                         z_flag_1 = ((mse_output_prev - mse_output_prev.mean())/mse_output_prev.std()) > 3
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= 3
                         # print(z_score_mse_prev)
                         # loss = loss + (z_flag_1 * sqrt_loss(outputs, outputs_prev) + z_flag_0 * mse_loss(outputs, labels)) * 0.5
                         loss = loss + (z_flag_1 * (outputs-outputs_prev + 1e-7)**0.5 + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
 
+                        print(outputs_prev.cpu().detach().numpy())
                     # loss = torch.sqrt(criterion(outputs, labels))
 
                     loss.backward()
