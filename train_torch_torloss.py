@@ -488,9 +488,12 @@ if __name__ == '__main__':
                     # Forward pass
                     outputs = model(images)
 
-
-                    loss = torch.sqrt(mse_loss(outputs, labels))
-
+                    if args.loss_function == 'rmse':
+                        loss = torch.sqrt(mse_loss(outputs, labels))
+                    elif args.loss_function == 'smoothl1':
+                        loss = torch.nn.SmoothL1Loss(outputs, labels)
+                    else:
+                        loss = mse_loss(outputs, labels)
 
                     if args.teacher_outlier_rejection and prev_model is not None and iter_i > 0:
                         print('go tor')
