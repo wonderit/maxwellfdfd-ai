@@ -66,6 +66,10 @@ pip install c:\{pip-dependency}\Pillow-6.2.2-cp37-cp37m-win_amd64.whl --no-deps
 pip install c:\{pip-dependency}\scikit_learn-0.21.3-cp37-cp37m-win_amd64.whl --no-deps
 pandas-1.2.0-cp37-cp37m-manylinux1_x86_64.whl 
 
+
+#run
+python train_torch_torloss.py -a -it 2 -e 1 -tor -rm
+
 ```
 
  

@@ -27,48 +27,48 @@ print('Torch is running on Device : {}'.format(device))
 DATAPATH_TRAIN = os.path.join('data', 'train')
 DATASETS_TRAIN = [
     'binary_501',
-    'binary_502',
-    'binary_503',
-    'binary_504',
-    'binary_505',
-    'binary_506',
-    'binary_507',
-    'binary_508',
-    'binary_509',
-    'binary_510',
-    'binary_511',
-    'binary_512',
-    'binary_1001',
-    'binary_1002',
-    'binary_1003',
-    'binary_rl_fix_501',
-    'binary_rl_fix_502',
-    'binary_rl_fix_503',
-    'binary_rl_fix_504',
-    'binary_rl_fix_505',
-    'binary_rl_fix_506',
-    'binary_rl_fix_507',
-    'binary_rl_fix_508',
-    'binary_rl_fix_509',
-    'binary_rl_fix_510',
-    'binary_rl_fix_511',
-    'binary_rl_fix_512',
-    'binary_rl_fix_513',
-    'binary_rl_fix_514',
-    'binary_rl_fix_515',
-    'binary_rl_fix_516',
-    'binary_rl_fix_517',
-    'binary_rl_fix_518',
-    'binary_rl_fix_519',
-    'binary_rl_fix_520',
-    'binary_rl_fix_1001',
-    'binary_rl_fix_1002',
-    'binary_rl_fix_1003',
-    'binary_rl_fix_1004',
-    'binary_rl_fix_1005',
-    'binary_rl_fix_1006',
-    'binary_rl_fix_1007',
-    'binary_rl_fix_1008',
+    # 'binary_502',
+    # 'binary_503',
+    # 'binary_504',
+    # 'binary_505',
+    # 'binary_506',
+    # 'binary_507',
+    # 'binary_508',
+    # 'binary_509',
+    # 'binary_510',
+    # 'binary_511',
+    # 'binary_512',
+    # 'binary_1001',
+    # 'binary_1002',
+    # 'binary_1003',
+    # 'binary_rl_fix_501',
+    # 'binary_rl_fix_502',
+    # 'binary_rl_fix_503',
+    # 'binary_rl_fix_504',
+    # 'binary_rl_fix_505',
+    # 'binary_rl_fix_506',
+    # 'binary_rl_fix_507',
+    # 'binary_rl_fix_508',
+    # 'binary_rl_fix_509',
+    # 'binary_rl_fix_510',
+    # 'binary_rl_fix_511',
+    # 'binary_rl_fix_512',
+    # 'binary_rl_fix_513',
+    # 'binary_rl_fix_514',
+    # 'binary_rl_fix_515',
+    # 'binary_rl_fix_516',
+    # 'binary_rl_fix_517',
+    # 'binary_rl_fix_518',
+    # 'binary_rl_fix_519',
+    # 'binary_rl_fix_520',
+    # 'binary_rl_fix_1001',
+    # 'binary_rl_fix_1002',
+    # 'binary_rl_fix_1003',
+    # 'binary_rl_fix_1004',
+    # 'binary_rl_fix_1005',
+    # 'binary_rl_fix_1006',
+    # 'binary_rl_fix_1007',
+    # 'binary_rl_fix_1008',
 ]
 
 ## VALIDATION
@@ -441,14 +441,21 @@ if __name__ == '__main__':
 
             model = ConvNet(num_classes).to(device)
 
+
             # Initialize weights
             if args.remember_model and prev_model is not None:
-                print('Initializing model with previous model 0')
-                model.load_state_dict(torch.load(prev_model_path))
-                model.train()
+                if args.teacher_outlier_rejection:
+                    print('Get teacher model for tor loss')
+                    prev_model = ConvNet(num_classes).to(device)
+                    prev_model.load_state_dict(torch.load(prev_model_path))
+                    prev_model.eval()
+                else:
+                    print('Initializing model with previous model 0')
+                    model.load_state_dict(torch.load(prev_model_path))
+                    model.train()
 
             # Loss and optimizer
-            criterion = nn.MSELoss()
+            # criterion = nn.MSELoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
             # Lr scheduler
@@ -471,7 +478,18 @@ if __name__ == '__main__':
 
                     # Forward pass
                     outputs = model(images)
-                    loss = torch.sqrt(mse_loss(outputs, labels))
+
+
+                    loss = torch.sqrt(mse_loss(outputs, labels)) * 0.5
+
+
+                    if args.teacher_outlier_rejection and prev_model is not None:
+                        outputs_prev = prev_model(images)
+                        mse_output_prev = mse_loss(outputs_prev, labels)
+                        z_score_mse_prev = (mse_output_prev - mse_output_prev.mean())/mse_output_prev.std()
+                        print(z_score_mse_prev)
+                        exit()
+
                     # loss = torch.sqrt(criterion(outputs, labels))
 
                     loss.backward()
