@@ -32,43 +32,43 @@ DATASETS_TRAIN = [
     'binary_504',
     'binary_505',
     'binary_506',
-    # 'binary_507',
-    # 'binary_508',
-    # 'binary_509',
-    # 'binary_510',
-    # 'binary_511',
-    # 'binary_512',
-    # 'binary_1001',
-    # 'binary_1002',
-    # 'binary_1003',
-    # 'binary_rl_fix_501',
-    # 'binary_rl_fix_502',
-    # 'binary_rl_fix_503',
-    # 'binary_rl_fix_504',
-    # 'binary_rl_fix_505',
-    # 'binary_rl_fix_506',
-    # 'binary_rl_fix_507',
-    # 'binary_rl_fix_508',
-    # 'binary_rl_fix_509',
-    # 'binary_rl_fix_510',
-    # 'binary_rl_fix_511',
-    # 'binary_rl_fix_512',
-    # 'binary_rl_fix_513',
-    # 'binary_rl_fix_514',
-    # 'binary_rl_fix_515',
-    # 'binary_rl_fix_516',
-    # 'binary_rl_fix_517',
-    # 'binary_rl_fix_518',
-    # 'binary_rl_fix_519',
-    # 'binary_rl_fix_520',
-    # 'binary_rl_fix_1001',
-    # 'binary_rl_fix_1002',
-    # 'binary_rl_fix_1003',
-    # 'binary_rl_fix_1004',
-    # 'binary_rl_fix_1005',
-    # 'binary_rl_fix_1006',
-    # 'binary_rl_fix_1007',
-    # 'binary_rl_fix_1008',
+    'binary_507',
+    'binary_508',
+    'binary_509',
+    'binary_510',
+    'binary_511',
+    'binary_512',
+    'binary_1001',
+    'binary_1002',
+    'binary_1003',
+    'binary_rl_fix_501',
+    'binary_rl_fix_502',
+    'binary_rl_fix_503',
+    'binary_rl_fix_504',
+    'binary_rl_fix_505',
+    'binary_rl_fix_506',
+    'binary_rl_fix_507',
+    'binary_rl_fix_508',
+    'binary_rl_fix_509',
+    'binary_rl_fix_510',
+    'binary_rl_fix_511',
+    'binary_rl_fix_512',
+    'binary_rl_fix_513',
+    'binary_rl_fix_514',
+    'binary_rl_fix_515',
+    'binary_rl_fix_516',
+    'binary_rl_fix_517',
+    'binary_rl_fix_518',
+    'binary_rl_fix_519',
+    'binary_rl_fix_520',
+    'binary_rl_fix_1001',
+    'binary_rl_fix_1002',
+    'binary_rl_fix_1003',
+    'binary_rl_fix_1004',
+    'binary_rl_fix_1005',
+    'binary_rl_fix_1006',
+    'binary_rl_fix_1007',
+    'binary_rl_fix_1008',
 ]
 
 ## VALIDATION
@@ -489,20 +489,10 @@ if __name__ == '__main__':
                     if args.teacher_outlier_rejection and prev_model is not None and iter_i > 0:
                         print('go tor')
                         outputs_prev = prev_model(images)
-                        # mse_output_prev = mse_loss(outputs_prev, labels)
                         mse_output_prev = (outputs_prev - labels) ** 2
-                        z_flag_1 = ((mse_output_prev - mse_output_prev.mean())/mse_output_prev.std()) > 3
+                        z_flag_1 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) > 3
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= 3
-                        # print(z_score_mse_prev)
-                        # loss = loss + (z_flag_1 * sqrt_loss(outputs, outputs_prev) + z_flag_0 * mse_loss(outputs, labels)) * 0.5
                         loss = loss + (z_flag_1 * (outputs-outputs_prev + 1e-7)**0.5 + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
-                        print('zflag1 s')
-                        print(z_flag_1.cpu().detach().numpy())
-                        print('zflag1 e')
-                        print('zflag0 s')
-                        print(z_flag_0.cpu().detach().numpy())
-                        print('zflag0 e')
-                    # loss = torch.sqrt(criterion(outputs, labels))
 
                     loss.backward()
 
@@ -540,10 +530,6 @@ if __name__ == '__main__':
 
                     pred_array = pred_array.reshape(-1)
                     labels_array = labels_array.reshape(-1)
-                    print('isnan pred')
-                    print(pred_array)
-                    print('isnan labels')
-                    print(labels_array)
                     # val_loss = torch.sqrt(mse_loss(outputs, labels))
                     val_loss = np.sqrt(mean_squared_error(labels_array, pred_array))
                     r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
