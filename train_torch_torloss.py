@@ -524,8 +524,12 @@ if __name__ == '__main__':
                         labels = labels.to(device)
                         outputs = model(images)
 
-                        pred_array.extend(outputs.to(device).numpy().reshape(-1))
-                        labels_array.extend(labels.to(device).numpy().reshape(-1))
+                        if device == 'cpu':
+                            pred_array.extend(outputs.cpu().numpy().reshape(-1))
+                            labels_array.extend(labels.cpu().numpy().reshape(-1))
+                        else:
+                            pred_array.extend(outputs.cuda().numpy().reshape(-1))
+                            labels_array.extend(labels.cuda().numpy().reshape(-1))
                         total += labels.size(0)
 
                     pred_array = np.array(pred_array)
@@ -561,8 +565,13 @@ if __name__ == '__main__':
                     labels = labels.to(device)
                     outputs = model(images)
 
-                    pred_array.extend(outputs.to(device).numpy().reshape(-1))
-                    labels_array.extend(labels.to(device).numpy().reshape(-1))
+                    if device == 'cpu':
+                        pred_array.extend(outputs.cpu().numpy().reshape(-1))
+                        labels_array.extend(labels.cpu().numpy().reshape(-1))
+                    else:
+                        pred_array.extend(outputs.cuda().numpy().reshape(-1))
+                        labels_array.extend(labels.cuda().numpy().reshape(-1))
+
                     total += labels.size(0)
 
                 pred_array = np.array(pred_array)
@@ -617,7 +626,11 @@ if __name__ == '__main__':
                     for (active_images, active_labels) in active_loader:
                         torch_U_x_image = active_images.to(device)
                         predict_from_model = model(torch_U_x_image)
-                        np_pred = predict_from_model.to(device).data.numpy()
+
+                        if device == 'cpu':
+                            np_pred = predict_from_model.cpu().data.numpy()
+                        else:
+                            np_pred = predict_from_model.cuda().data.numpy()
                         x_pr_active.extend(np_pred)
                     x_pr_active = np.array(x_pr_active)
                     X_pr.append(x_pr_active)
