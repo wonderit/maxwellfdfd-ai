@@ -489,6 +489,7 @@ if __name__ == '__main__':
                     if args.teacher_outlier_rejection and prev_model is not None and iter_i > 0:
                         print('go tor')
                         outputs_prev = prev_model(images)
+                        print(outputs_prev.cpu().numpy())
                         mse_output_prev = mse_loss(outputs_prev, labels)
                         z_flag_1 = ((mse_output_prev - mse_output_prev.mean())/mse_output_prev.std()) > 3
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= 3
