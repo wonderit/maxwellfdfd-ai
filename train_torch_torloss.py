@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 import argparse
 from PIL import Image
@@ -491,7 +492,7 @@ if __name__ == '__main__':
                     if args.loss_function == 'rmse':
                         loss = torch.sqrt(mse_loss(outputs, labels))
                     elif args.loss_function == 'smoothl1':
-                        loss = torch.nn.SmoothL1Loss(outputs, labels)
+                        loss = F.smooth_l1_loss(outputs, labels)
                     else:
                         loss = mse_loss(outputs, labels)
 
