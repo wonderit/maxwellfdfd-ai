@@ -455,7 +455,7 @@ if __name__ == '__main__':
                 else:
                     print('Initializing model with previous model 0')
                     model.load_state_dict(torch.load(prev_model_path))
-                    model.train()
+                model.train()
 
             # Loss and optimizer
             # criterion = nn.MSELoss()
