@@ -496,8 +496,12 @@ if __name__ == '__main__':
                         # print(z_score_mse_prev)
                         # loss = loss + (z_flag_1 * sqrt_loss(outputs, outputs_prev) + z_flag_0 * mse_loss(outputs, labels)) * 0.5
                         loss = loss + (z_flag_1 * (outputs-outputs_prev + 1e-7)**0.5 + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
-
-                        print(outputs_prev.cpu().detach().numpy())
+                        print('zflag1 s')
+                        print(z_flag_1.cpu().detach().numpy())
+                        print('zflag1 e')
+                        print('zflag0 s')
+                        print(z_flag_0.cpu().detach().numpy())
+                        print('zflag0 e')
                     # loss = torch.sqrt(criterion(outputs, labels))
 
                     loss.backward()
@@ -526,8 +530,8 @@ if __name__ == '__main__':
                         labels = labels.to(device)
                         outputs = model(images)
 
-                        pred_array.extend(outputs.cpu().numpy().reshape(-1))
-                        labels_array.extend(labels.cpu().numpy().reshape(-1))
+                        pred_array.extend(outputs.cpu().detach().numpy().reshape(-1))
+                        labels_array.extend(labels.cpu().detach().numpy().reshape(-1))
 
                         total += labels.size(0)
 
