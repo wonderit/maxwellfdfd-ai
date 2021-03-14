@@ -175,6 +175,7 @@ if __name__ == '__main__':
     # arg for KD
     parser.add_argument("-rm", "--remember_model", action='store_true')
     parser.add_argument("-tor", "--teacher_outlier_rejection", action='store_true')
+    parser.add_argument("-tbr", "--teacher_bounded_regression", action='store_true')
     parser.add_argument("-z", "--z_score", type=float, default=2.0)
     # arg for rpo type
     parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff)", default='max_diff')
@@ -393,6 +394,11 @@ if __name__ == '__main__':
         log_folder = 'torch/al_tor_{}_z{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
             args.loss_function, args.z_score, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
         )
+
+    if args.teacher_bounded_regression:
+        log_folder = 'torch/al_tbr_{}_z{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
+            args.loss_function, args.z_score, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
+        )
     torch_loss_folder = '{}/train_progress'.format(log_folder)
     torch_model_folder = '{}/model'.format(log_folder)
 
@@ -503,6 +509,14 @@ if __name__ == '__main__':
                         z_flag_1 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) > args.z_score
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= args.z_score
                         loss = loss + (z_flag_1 * torch.abs(outputs-outputs_prev)**0.5 + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
+
+
+                    if args.teacher_bounded_regression and prev_model is not None and iter_i > 0:
+                        outputs_prev = prev_model(images)
+                        mse_output_prev = (outputs_prev - labels) ** 2
+                        mse_output = (outputs - labels) ** 2
+                        flag = (mse_output - mse_output_prev) > 0
+                        loss = 0.5 * loss + 0.5 * (flag * (outputs-outputs_prev)**2).sum() / outputs.data.nelement()
 
                     loss.backward()
 
