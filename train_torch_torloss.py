@@ -176,6 +176,7 @@ if __name__ == '__main__':
     parser.add_argument("-rm", "--remember_model", action='store_true')
     parser.add_argument("-tor", "--teacher_outlier_rejection", action='store_true')
     parser.add_argument("-tbr", "--teacher_bounded_regression", action='store_true')
+    parser.add_argument("-tbra", "--tbr_addition", action='store_true')
     parser.add_argument("-z", "--z_score", type=float, default=2.0)
     # arg for rpo type
     parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff)", default='max_diff')
@@ -396,8 +397,11 @@ if __name__ == '__main__':
         )
 
     if args.teacher_bounded_regression:
-        log_folder = 'torch/al_tbr_{}_z{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-            args.loss_function, args.z_score, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
+        tbr_type = 'upper_bound'
+        if args.tbr_addition:
+            tbr_type = 'addition'
+        log_folder = 'torch/al_tbr_{}_{}_z{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
+            tbr_type, args.loss_function, args.z_score, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
         )
     torch_loss_folder = '{}/train_progress'.format(log_folder)
     torch_model_folder = '{}/model'.format(log_folder)
@@ -515,7 +519,10 @@ if __name__ == '__main__':
                         mse_output_prev = (outputs_prev - labels) ** 2
                         mse_output = (outputs - labels) ** 2
                         flag = (mse_output - mse_output_prev) > 0
-                        loss = 0.5 * loss + 0.5 * (flag * (outputs-outputs_prev)**2).sum() / outputs.data.nelement()
+                        if args.tbr_addition:
+                            loss = 0.5 * loss + 0.5 * torch.sqrt(((outputs-outputs_prev)**2).sum() / outputs.data.nelement())
+                        else:
+                            loss = 0.5 * loss + 0.5 * (flag * torch.sqrt((outputs-outputs_prev)**2).sum() / outputs.data.nelement())
 
                     loss.backward()
 
