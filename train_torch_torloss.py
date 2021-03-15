@@ -503,12 +503,11 @@ if __name__ == '__main__':
                         loss = mse_loss(outputs, labels)
 
                     if args.teacher_outlier_rejection and prev_model is not None and iter_i > 0:
-                        print('go tor')
                         outputs_prev = prev_model(images)
                         mse_output_prev = (outputs_prev - labels) ** 2
                         z_flag_1 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) > args.z_score
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= args.z_score
-                        loss = loss + (z_flag_1 * torch.abs(outputs-outputs_prev)**0.5 + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
+                        loss = 0.5 * loss + 0.5 * (z_flag_1 * torch.abs(outputs-outputs_prev)**0.5 + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
 
 
                     if args.teacher_bounded_regression and prev_model is not None and iter_i > 0:
