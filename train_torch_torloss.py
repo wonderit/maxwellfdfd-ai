@@ -174,6 +174,7 @@ if __name__ == '__main__':
 
     # arg for KD
     parser.add_argument("-rm", "--remember_model", action='store_true')
+    parser.add_argument("-w", "--weight", action='store_true')
     parser.add_argument("-tor", "--teacher_outlier_rejection", action='store_true')
     parser.add_argument("-tbr", "--teacher_bounded_regression", action='store_true')
     parser.add_argument("-tbra", "--tbr_addition", action='store_true')
@@ -377,32 +378,29 @@ if __name__ == '__main__':
             return out
 
         # create loss log folder
-
-    log_folder = 'torch/al_{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-        args.loss_function, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
-    )
+    al_type = 'al'
     if args.is_active_random:
-        log_folder = 'torch/al_random_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-            args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
-        )
+        al_type = al_type + '_random'
 
     if args.remember_model:
-        log_folder = 'torch/al_remember_loss{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-            args.loss_function, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
-        )
+        al_type = al_type + '_rm'
+
+    if args.weight:
+        al_type = al_type + '_weight'
 
     if args.teacher_outlier_rejection:
-        log_folder = 'torch/al_tor_{}_z{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-            args.loss_function, args.z_score, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
-        )
+        al_type = al_type + '_tor_z{}'.format(args.z_score)
 
     if args.teacher_bounded_regression:
         tbr_type = 'upper_bound'
         if args.tbr_addition:
             tbr_type = 'addition'
-        log_folder = 'torch/al_tbr_{}_{}_z{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-            tbr_type, args.loss_function, args.z_score, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
-        )
+        al_type = al_type + '_tbr_{}'.format(tbr_type)
+
+    log_folder = 'torch/{}_{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
+        al_type, args.loss_function, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
+    )
+
     torch_loss_folder = '{}/train_progress'.format(log_folder)
     torch_model_folder = '{}/model'.format(log_folder)
 
@@ -464,12 +462,12 @@ if __name__ == '__main__':
 
             # Initialize weights
             if args.remember_model and prev_model is not None and iter_i > 0:
-                if args.teacher_outlier_rejection:
-                    print('Get teacher model for tor loss')
-                    prev_model = ConvNet(num_classes).to(device)
-                    prev_model.load_state_dict(torch.load(prev_model_path))
-                    prev_model.eval()
-                else:
+                print('Get teacher model for tor loss')
+                prev_model = ConvNet(num_classes).to(device)
+                prev_model.load_state_dict(torch.load(prev_model_path))
+                prev_model.eval()
+
+                if args.weight:
                     print('Initializing model with previous model 0')
                     model.load_state_dict(torch.load(prev_model_path))
                 model.train()
