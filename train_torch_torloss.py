@@ -388,6 +388,9 @@ if __name__ == '__main__':
     if args.is_active_random:
         al_type = al_type + '_random'
 
+    if args.pseudo_label:
+        al_type = al_type + '_pl'
+
     if args.remember_model:
         al_type = al_type + '_rm'
 
