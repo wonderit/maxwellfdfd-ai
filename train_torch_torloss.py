@@ -519,9 +519,9 @@ if __name__ == '__main__':
                         mse_output = (outputs - labels) ** 2
                         flag = (mse_output - mse_output_prev) > 0
                         if args.tbr_addition:
-                            loss = 0.5 * loss + 0.5 * torch.sqrt(((outputs-outputs_prev)**2).sum() / outputs.data.nelement())
+                            loss = 0.5 * loss + 0.5 * (((outputs-outputs_prev)**2).sum() / outputs.data.nelement())
                         else:
-                            loss = 0.5 * loss + 0.5 * (flag * torch.sqrt((outputs-outputs_prev)**2).sum() / outputs.data.nelement())
+                            loss = 0.5 * loss + 0.5 * (flag * ((outputs-outputs_prev)**2).sum() / outputs.data.nelement())
 
                     loss.backward()
 
