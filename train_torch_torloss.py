@@ -696,7 +696,7 @@ if __name__ == '__main__':
             U_y = U_y[U_indices]
 
             # if pseudo label
-            if args.pseudo_label and args.remember_model:
+            if args.pseudo_label:
                 X_pr_avg = np.average(X_pr, axis=0)
                 X_pr_avg_U = X_pr_avg[U_indices]
                 PL_x = np.append(L_x, U_x, axis=0)
