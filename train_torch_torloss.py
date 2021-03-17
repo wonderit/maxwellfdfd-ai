@@ -29,47 +29,47 @@ DATAPATH_TRAIN = os.path.join('data', 'train')
 DATASETS_TRAIN = [
     'binary_501',
     'binary_502',
-    'binary_503',
-    'binary_504',
-    'binary_505',
-    'binary_506',
-    'binary_507',
-    'binary_508',
-    'binary_509',
-    'binary_510',
-    'binary_511',
-    'binary_512',
-    'binary_1001',
-    'binary_1002',
-    'binary_1003',
-    'binary_rl_fix_501',
-    'binary_rl_fix_502',
-    'binary_rl_fix_503',
-    'binary_rl_fix_504',
-    'binary_rl_fix_505',
-    'binary_rl_fix_506',
-    'binary_rl_fix_507',
-    'binary_rl_fix_508',
-    'binary_rl_fix_509',
-    'binary_rl_fix_510',
-    'binary_rl_fix_511',
-    'binary_rl_fix_512',
-    'binary_rl_fix_513',
-    'binary_rl_fix_514',
-    'binary_rl_fix_515',
-    'binary_rl_fix_516',
-    'binary_rl_fix_517',
-    'binary_rl_fix_518',
-    'binary_rl_fix_519',
-    'binary_rl_fix_520',
-    'binary_rl_fix_1001',
-    'binary_rl_fix_1002',
-    'binary_rl_fix_1003',
-    'binary_rl_fix_1004',
-    'binary_rl_fix_1005',
-    'binary_rl_fix_1006',
-    'binary_rl_fix_1007',
-    'binary_rl_fix_1008',
+    # 'binary_503',
+    # 'binary_504',
+    # 'binary_505',
+    # 'binary_506',
+    # 'binary_507',
+    # 'binary_508',
+    # 'binary_509',
+    # 'binary_510',
+    # 'binary_511',
+    # 'binary_512',
+    # 'binary_1001',
+    # 'binary_1002',
+    # 'binary_1003',
+    # 'binary_rl_fix_501',
+    # 'binary_rl_fix_502',
+    # 'binary_rl_fix_503',
+    # 'binary_rl_fix_504',
+    # 'binary_rl_fix_505',
+    # 'binary_rl_fix_506',
+    # 'binary_rl_fix_507',
+    # 'binary_rl_fix_508',
+    # 'binary_rl_fix_509',
+    # 'binary_rl_fix_510',
+    # 'binary_rl_fix_511',
+    # 'binary_rl_fix_512',
+    # 'binary_rl_fix_513',
+    # 'binary_rl_fix_514',
+    # 'binary_rl_fix_515',
+    # 'binary_rl_fix_516',
+    # 'binary_rl_fix_517',
+    # 'binary_rl_fix_518',
+    # 'binary_rl_fix_519',
+    # 'binary_rl_fix_520',
+    # 'binary_rl_fix_1001',
+    # 'binary_rl_fix_1002',
+    # 'binary_rl_fix_1003',
+    # 'binary_rl_fix_1004',
+    # 'binary_rl_fix_1005',
+    # 'binary_rl_fix_1006',
+    # 'binary_rl_fix_1007',
+    # 'binary_rl_fix_1008',
 ]
 
 ## VALIDATION
@@ -179,6 +179,7 @@ if __name__ == '__main__':
     parser.add_argument("-tbr", "--teacher_bounded_regression", action='store_true')
     parser.add_argument("-tbra", "--tbr_addition", action='store_true')
     parser.add_argument("-z", "--z_score", type=float, default=2.0)
+    parser.add_argument("-pl", "--pseudo_label", action='store_true')
     # arg for rpo type
     parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff)", default='max_diff')
     parser.add_argument("-rts", "--rpo_type_schedule", help="rpo type scheduling", action='store_true')
@@ -341,6 +342,10 @@ if __name__ == '__main__':
         U_y = y_train[U_indices]
         ITERATION = ITERATION + 1
 
+        if args.pseudo_label:
+            PL_x = L_x
+            PL_y = L_y
+
 
     # Convolutional neural network (two convolutional layers)
     class ConvNet(nn.Module):
@@ -447,6 +452,13 @@ if __name__ == '__main__':
         test_loader = torch.utils.data.DataLoader(dataset=test_set,
                                                   batch_size=batch_size,
                                                   shuffle=False)
+
+        if iter_i > 0 and args.pseudo_label:
+            train_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
+
+            train_loader = torch.utils.data.DataLoader(dataset=train_set,
+                                                       batch_size=batch_size,
+                                                       shuffle=True)
 
         # Train model
         total_step = len(train_loader)
@@ -658,6 +670,7 @@ if __name__ == '__main__':
             # Ascending order Sorted
             rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
             rpo_array_sum = np.sum(rpo_array, axis=1)
+
             if args.rpo_type == 'max_diff' or args.rpo_type == 'mid_diff':
                 rpo_array_arg_sort = np.argsort(rpo_array_sum)
             else:
@@ -681,6 +694,17 @@ if __name__ == '__main__':
 
             U_x = U_x[U_indices]
             U_y = U_y[U_indices]
+
+            # if pseudo label
+            if args.pseudo_label and args.remember_model:
+                X_pr_avg = np.average(X_pr, axis=0)
+                X_pr_avg_U = X_pr_avg[U_indices]
+                PL_x = np.append(L_x, U_x, axis=0)
+                PL_y = np.append(L_y, X_pr_avg_U, axis = 0)
+                # shuffle Pseudo Labeled data
+                shuffle_index = np.random.permutation(len(PL_x))
+                PL_x = PL_x[shuffle_index]
+                PL_y = PL_y[shuffle_index]
 
         # shuffle Labeled data
         shuffle_index = np.random.permutation(len(L_x))
