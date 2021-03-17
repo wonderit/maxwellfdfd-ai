@@ -181,6 +181,7 @@ if __name__ == '__main__':
     parser.add_argument("-z", "--z_score", type=float, default=2.0)
     # arg for rpo type
     parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff)", default='max_diff')
+    parser.add_argument("-rts", "--rpo_type_schedule", help="rpo type scheduling", action='store_true')
     args = parser.parse_args()
 
     # TEST
@@ -657,7 +658,7 @@ if __name__ == '__main__':
             # Ascending order Sorted
             rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
             rpo_array_sum = np.sum(rpo_array, axis=1)
-            if args.rpo_type == 'max_diff':
+            if args.rpo_type == 'max_diff' or args.rpo_type == 'mid_diff':
                 rpo_array_arg_sort = np.argsort(rpo_array_sum)
             else:
                 rpo_array_arg_sort = np.argsort(-rpo_array_sum)
@@ -665,8 +666,15 @@ if __name__ == '__main__':
             # add labeled to L_iter
             T_indices = int(len(x_train) * args.labeled_ratio * args.top_ratio)
             U_length = len(rpo_array_arg_sort) - T_indices
-            U_indices = rpo_array_arg_sort[:U_length]
-            L_indices = rpo_array_arg_sort[U_length:]
+            if args.rpo_type == 'mid_diff':
+                start_idx = int(U_length / 2)
+                U_indices = rpo_array_arg_sort[:start_idx]
+                U_indices = np.append(U_indices, rpo_array_arg_sort[start_idx+T_indices:], axis=0)
+
+                L_indices = rpo_array_arg_sort[start_idx:start_idx+T_indices]
+            else:
+                U_indices = rpo_array_arg_sort[:U_length]
+                L_indices = rpo_array_arg_sort[U_length:]
 
             L_x = np.append(L_x, U_x[L_indices], axis=0)
             L_y = np.append(L_y, U_y[L_indices], axis=0)
