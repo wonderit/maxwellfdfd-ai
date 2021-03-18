@@ -517,6 +517,8 @@ if __name__ == '__main__':
                         loss = torch.sqrt(mse_loss(outputs, labels))
                     elif args.loss_function == 'smoothl1':
                         loss = F.smooth_l1_loss(outputs, labels)
+                    elif args.loss_function == 'l1':
+                        loss = F.l1_loss(outputs, labels)
                     else:
                         loss = mse_loss(outputs, labels)
 
