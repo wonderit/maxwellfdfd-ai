@@ -544,7 +544,7 @@ if __name__ == '__main__':
                         mse_output_prev = (outputs_prev - labels) ** 2
                         z_flag_1 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) > args.z_score
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= args.z_score
-                        loss = loss + 0.5 * (z_flag_1 * (torch.abs(outputs-outputs_prev))**0.5 + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
+                        loss = loss + 0.5 * (z_flag_1 * torch.sqrt(torch.abs(outputs-outputs_prev) + 1e-7) + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
 
 
                     if args.teacher_bounded_regression and iter_i > 0:
@@ -588,11 +588,13 @@ if __name__ == '__main__':
 
                         total += labels.size(0)
 
-                    pred_array = np.array(pred_array)
-                    labels_array = np.array(labels_array)
+                    pred_array = np.array(pred_array, dtype=float)
+                    labels_array = np.array(labels_array, dtype=float)
 
                     pred_array = pred_array.reshape(-1)
                     labels_array = labels_array.reshape(-1)
+                    if np.any(np.isnan(pred_array)):
+                        print('INPUT CONTAINS NAN ERROR!!!', )
                     # val_loss = torch.sqrt(mse_loss(outputs, labels))
                     val_loss = np.sqrt(mean_squared_error(labels_array, pred_array))
                     r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
@@ -627,8 +629,8 @@ if __name__ == '__main__':
 
                     total += labels.size(0)
 
-                pred_array = np.array(pred_array)
-                labels_array = np.array(labels_array)
+                pred_array = np.array(pred_array, dtype=float)
+                labels_array = np.array(labels_array, dtype=float)
 
                 pred_array = pred_array.reshape(-1)
                 labels_array = labels_array.reshape(-1)
