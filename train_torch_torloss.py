@@ -12,6 +12,7 @@ from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 
 from pytorchtools import EarlyStopping
+import random
 
 # Device configuration
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -22,6 +23,16 @@ print('Torch is running on Device : {}'.format(device))
 # num_classes = 24
 # batch_size = 128
 # learning_rate = 0.001
+
+# Set deterministic random seed
+random_seed = 1234
+torch.manual_seed(random_seed)
+torch.cuda.manual_seed(random_seed)
+torch.cuda.manual_seed_all(random_seed) # if use multi-GPU
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+np.random.seed(random_seed)
+random.seed(random_seed)
 
 
 ## TRAIN
@@ -183,6 +194,9 @@ if __name__ == '__main__':
     # arg for rpo type
     parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff)", default='max_diff')
     parser.add_argument("-rts", "--rpo_type_schedule", help="rpo type scheduling", action='store_true')
+
+    # arg for uncertainty attention
+    parser.add_argument("-ua", "--uncertainty_attention", help="flag for uncertainty attention of gradients", action='store_true')
     args = parser.parse_args()
 
     # TEST
