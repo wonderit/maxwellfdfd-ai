@@ -420,6 +420,9 @@ if __name__ == '__main__':
             tbr_type = 'addition'
         al_type = al_type + '_tbr_{}'.format(tbr_type)
 
+    if args.uncertainty_attention:
+        al_type = al_type + '_ua'
+
     log_folder = 'torch/{}_{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
         al_type, args.loss_function, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
     )
@@ -491,7 +494,7 @@ if __name__ == '__main__':
 
 
             # Initialize weights
-            if args.remember_model and prev_model is not None and iter_i > 0:
+            if args.remember_model and iter_i > 0:
                 print('Get teacher model for tor loss')
                 prev_model = ConvNet(num_classes).to(device)
                 prev_model.load_state_dict(torch.load(prev_model_path))
@@ -536,7 +539,7 @@ if __name__ == '__main__':
                     else:
                         loss = mse_loss(outputs, labels)
 
-                    if args.teacher_outlier_rejection and prev_model is not None and iter_i > 0:
+                    if args.teacher_outlier_rejection and iter_i > 0:
                         outputs_prev = prev_model(images)
                         mse_output_prev = (outputs_prev - labels) ** 2
                         z_flag_1 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) > args.z_score
@@ -544,7 +547,7 @@ if __name__ == '__main__':
                         loss = loss + 0.5 * (z_flag_1 * (torch.abs(outputs-outputs_prev))**0.5 + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
 
 
-                    if args.teacher_bounded_regression and prev_model is not None and iter_i > 0:
+                    if args.teacher_bounded_regression and iter_i > 0:
                         outputs_prev = prev_model(images)
                         mse_output_prev = (outputs_prev - labels) ** 2
                         mse_output = (outputs - labels) ** 2
