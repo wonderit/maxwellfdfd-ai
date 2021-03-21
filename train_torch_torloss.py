@@ -25,7 +25,7 @@ print('Torch is running on Device : {}'.format(device))
 # learning_rate = 0.001
 
 # Set deterministic random seed
-random_seed = 1234
+random_seed = 999
 torch.manual_seed(random_seed)
 torch.cuda.manual_seed(random_seed)
 torch.cuda.manual_seed_all(random_seed) # if use multi-GPU
