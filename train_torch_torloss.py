@@ -555,7 +555,7 @@ if __name__ == '__main__':
                         if args.tbr_addition:
                             loss = loss + 0.5 * (((outputs-labels)**2).sum() / outputs.data.nelement())
                         else:
-                            loss = loss + 0.5 * (flag * ((outputs-labels)**2).sum() / outputs.data.nelement())
+                            loss = loss + 0.5 * (flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
 
                     loss.backward()
 
@@ -588,8 +588,8 @@ if __name__ == '__main__':
 
                         total += labels.size(0)
 
-                    pred_array = np.array(pred_array, dtype=float)
-                    labels_array = np.array(labels_array, dtype=float)
+                    pred_array = np.array(pred_array)
+                    labels_array = np.array(labels_array)
 
                     pred_array = pred_array.reshape(-1)
                     labels_array = labels_array.reshape(-1)
@@ -629,8 +629,8 @@ if __name__ == '__main__':
 
                     total += labels.size(0)
 
-                pred_array = np.array(pred_array, dtype=float)
-                labels_array = np.array(labels_array, dtype=float)
+                pred_array = np.array(pred_array)
+                labels_array = np.array(labels_array)
 
                 pred_array = pred_array.reshape(-1)
                 labels_array = labels_array.reshape(-1)
