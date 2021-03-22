@@ -192,7 +192,7 @@ if __name__ == '__main__':
     parser.add_argument("-z", "--z_score", type=float, default=2.0)
     parser.add_argument("-pl", "--pseudo_label", action='store_true')
     # arg for rpo type
-    parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff)", default='max_diff')
+    parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff, random)", default='max_diff')
     parser.add_argument("-rts", "--rpo_type_schedule", help="rpo type scheduling", action='store_true')
 
     # arg for uncertainty attention
@@ -697,6 +697,8 @@ if __name__ == '__main__':
 
             if args.rpo_type == 'max_diff' or args.rpo_type == 'mid_diff':
                 rpo_array_arg_sort = np.argsort(rpo_array_sum)
+            elif args.rpo_type == 'random':
+                rpo_array_arg_sort = np.random.permutation(len(rpo_array_sum))
             else:
                 rpo_array_arg_sort = np.argsort(-rpo_array_sum)
 
