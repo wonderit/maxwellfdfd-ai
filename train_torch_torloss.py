@@ -182,6 +182,7 @@ if __name__ == '__main__':
     parser.add_argument("-ar", "--is_active_random", help="Set is AL random set", action='store_true')
     parser.add_argument("-r", "--labeled_ratio", help="Set R", type=float, default=0.2)
     parser.add_argument("-t", "--top_ratio", help="Set T", type=float, default=0.1)
+    parser.add_argument("-ll", "--loss_lambda", help="set loss lambda", type=float, default=0.5)
 
     # arg for KD
     parser.add_argument("-rm", "--remember_model", action='store_true')
@@ -412,13 +413,13 @@ if __name__ == '__main__':
         al_type = al_type + '_weight'
 
     if args.teacher_outlier_rejection:
-        al_type = al_type + '_tor_z{}'.format(args.z_score)
+        al_type = al_type + '_tor_z{}_lambda{}'.format(args.z_score, args.loss_lambda)
 
     if args.teacher_bounded_regression:
         tbr_type = 'upper_bound'
         if args.tbr_addition:
             tbr_type = 'addition'
-        al_type = al_type + '_tbr_{}'.format(tbr_type)
+        al_type = al_type + '_tbr_{}_lambda{}'.format(tbr_type, args.loss_lambda)
 
     if args.uncertainty_attention:
         al_type = al_type + '_ua'
@@ -544,7 +545,7 @@ if __name__ == '__main__':
                         mse_output_prev = (outputs_prev - labels) ** 2
                         z_flag_1 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) > args.z_score
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= args.z_score
-                        loss = loss + 0.5 * (z_flag_1 * torch.sqrt(torch.abs(outputs-outputs_prev) + 1e-7) + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
+                        loss = loss + args.loss_lambda * (z_flag_1 * torch.sqrt(torch.abs(outputs-outputs_prev) + 1e-7) + z_flag_0 * (outputs-labels)**2).sum() / outputs.data.nelement()
 
 
                     if args.teacher_bounded_regression and iter_i > 0:
@@ -553,9 +554,9 @@ if __name__ == '__main__':
                         mse_output = (outputs - labels) ** 2
                         flag = (mse_output - mse_output_prev) > 0
                         if args.tbr_addition:
-                            loss = loss + 0.5 * (((outputs-labels)**2).sum() / outputs.data.nelement())
+                            loss = loss + args.loss_lambda * (((outputs-labels)**2).sum() / outputs.data.nelement())
                         else:
-                            loss = loss + 0.5 * (flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
+                            loss = loss + args.loss_lambda * (flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
 
                     loss.backward()
 
