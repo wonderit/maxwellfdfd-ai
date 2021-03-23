@@ -186,6 +186,7 @@ if __name__ == '__main__':
 
     # arg for KD
     parser.add_argument("-rm", "--remember_model", action='store_true')
+    parser.add_argument("-rms", "--remember_models", action='store_true')
     parser.add_argument("-w", "--weight", action='store_true')
     parser.add_argument("-tor", "--teacher_outlier_rejection", action='store_true')
     parser.add_argument("-tbr", "--teacher_bounded_regression", action='store_true')
@@ -409,6 +410,9 @@ if __name__ == '__main__':
     if args.remember_model:
         al_type = al_type + '_rm'
 
+    if args.remember_models:
+        al_type = al_type + '_rms'
+
     if args.weight:
         al_type = al_type + '_weight'
 
@@ -442,6 +446,8 @@ if __name__ == '__main__':
 
     prev_model = None
     prev_model_path = 'prev_model.pth'
+    prev_models_path = 'prev_{}th_model.pth'
+    prev_models = []
     for iter_i in range(ITERATION):
         print('Training Iteration : {}, Labeled dataset size : {}'.format(iter_i + 1, L_x.shape[0]))
         X_pr = []
@@ -651,10 +657,15 @@ if __name__ == '__main__':
                                                                                       test_rmse, test_r2, num_epochs, learning_rate)
             torch.save(model.state_dict(), model_file_name)
 
-            if args.remember_model and m == 0:
+            # remove m == 0
+            if args.remember_model:
                 print('ITERATION : {}, prev model updated'.format(iter_i))
                 torch.save(model.state_dict(), prev_model_path)
                 # prev_model = model
+
+            if args.remember_models:
+                print('ITERATION : {}, prev {}th model updated'.format(iter_i, m))
+                torch.save(model.state_dict(), prev_models_path.format(m))
 
             # Save learning curve
             plt.clf()
