@@ -729,17 +729,14 @@ if __name__ == '__main__':
             elif args.rpo_type == 'max_random_diff':
                 T_length_half = int(T_indices / 2)
                 U_length = len(rpo_array_arg_sort) - T_length_half
-
-
                 U_indices = rpo_array_arg_sort[:U_length]
                 L_indices = rpo_array_arg_sort[U_length:]
-                print('111u, l', U_indices.shape, L_indices.shape)
+
                 # start random sampling for T/2
                 random_u_indices = np.random.permutation(len(U_indices))
+                U_length = len(random_u_indices) - T_length_half
                 U_indices = random_u_indices[:U_length]
                 L_indices = np.append(L_indices, random_u_indices[U_length:], axis=0)
-
-                print('222u, l', U_indices.shape, L_indices.shape)
             else:
                 U_indices = rpo_array_arg_sort[:U_length]
                 L_indices = rpo_array_arg_sort[U_length:]
