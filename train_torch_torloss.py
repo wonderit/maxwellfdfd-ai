@@ -710,7 +710,7 @@ if __name__ == '__main__':
             rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
             rpo_array_sum = np.sum(rpo_array, axis=1)
 
-            if args.rpo_type == 'max_diff' or args.rpo_type == 'mid_diff':
+            if args.rpo_type == 'max_diff' or args.rpo_type == 'mid_diff' or args.rpo_type == 'max_random_diff':
                 rpo_array_arg_sort = np.argsort(rpo_array_sum)
             elif args.rpo_type == 'random':
                 rpo_array_arg_sort = np.random.permutation(len(rpo_array_sum))
@@ -726,6 +726,20 @@ if __name__ == '__main__':
                 U_indices = np.append(U_indices, rpo_array_arg_sort[start_idx+T_indices:], axis=0)
 
                 L_indices = rpo_array_arg_sort[start_idx:start_idx+T_indices]
+            elif args.rpo_type == 'max_random_diff':
+                T_length_half = int(T_indices / 2)
+                U_length = len(rpo_array_arg_sort) - T_length_half
+
+
+                U_indices = rpo_array_arg_sort[:U_length]
+                L_indices = rpo_array_arg_sort[U_length:]
+                print('111u, l', U_indices.shape, L_indices.shape)
+                # start random sampling for T/2
+                random_u_indices = np.random.permutation(len(U_indices))
+                U_indices = random_u_indices[:U_length]
+                L_indices = np.append(L_indices, random_u_indices[U_length:], axis=0)
+
+                print('222u, l', U_indices.shape, L_indices.shape)
             else:
                 U_indices = rpo_array_arg_sort[:U_length]
                 L_indices = rpo_array_arg_sort[U_length:]
