@@ -183,6 +183,7 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--labeled_ratio", help="Set R", type=float, default=0.2)
     parser.add_argument("-t", "--top_ratio", help="Set T", type=float, default=0.1)
     parser.add_argument("-ll", "--loss_lambda", help="set loss lambda", type=float, default=0.5)
+    parser.add_argument("-rtl", "--rpo_type_lambda", help="max random data ratio", type=float, default=0.5)
 
     # arg for KD
     parser.add_argument("-rm", "--remember_model", action='store_true')
@@ -434,8 +435,8 @@ if __name__ == '__main__':
     if args.uncertainty_attention:
         al_type = al_type + '_ua'
 
-    log_folder = 'torch/{}_{}_{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-        al_type, args.loss_function, args.rpo_type, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
+    log_folder = 'torch/{}_{}_{}{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
+        al_type, args.loss_function, args.rpo_type, args.rpo_type_lambda, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
     )
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
@@ -730,14 +731,15 @@ if __name__ == '__main__':
 
                 L_indices = rpo_array_arg_sort[start_idx:start_idx+T_indices]
             elif args.rpo_type == 'max_random_diff':
-                T_length_half = int(T_indices / 2)
-                U_length = len(rpo_array_arg_sort) - T_length_half
+                max_length = int(T_indices * args.rpo_type_lambda)
+                U_length = len(rpo_array_arg_sort) - max_length
                 U_indices = rpo_array_arg_sort[:U_length]
                 L_indices = rpo_array_arg_sort[U_length:]
 
                 # start random sampling for T/2
                 random_u_indices = np.random.permutation(len(U_indices))
-                U_length = len(random_u_indices) - T_length_half
+                random_length = int(T_indices * (1 - args.rpo_type_lambda))
+                U_length = len(random_u_indices) - random_length
                 U_indices = random_u_indices[:U_length]
                 L_indices = np.append(L_indices, random_u_indices[U_length:], axis=0)
             else:

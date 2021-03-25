@@ -69,7 +69,7 @@ pandas-1.2.0-cp37-cp37m-manylinux1_x86_64.whl
 
 #run
 python train_torch_torloss.py -a -it 2 -e 1 -tor -rm
-
+python train_torch_torloss.py -a -rt max_random_diff -e 100 -it 10 -l l1 -rtl 0.5
 ```
 
  
