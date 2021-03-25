@@ -229,6 +229,9 @@ if __name__ == '__main__':
         DATASETS_VALID = [
             'binary_1004',
         ]
+        args.debug = True
+        args.max_epoch = 1
+        args.iteration = 2
 
     x_train = []
     y_train = []
