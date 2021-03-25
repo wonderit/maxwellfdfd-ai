@@ -172,3 +172,8 @@ models_paper*.zip
 pip-dependency/
 circles/torch/
 circles/*.txt
+torch/
+result*/
+*.pt
+*.pth
+*.ckpt

@@ -229,6 +229,9 @@ if __name__ == '__main__':
         DATASETS_VALID = [
             'binary_1004',
         ]
+        DATASETS_TEST = [
+            'binary_new_test_501'
+        ]
         args.debug = True
         args.max_epoch = 1
         args.iteration = 2
