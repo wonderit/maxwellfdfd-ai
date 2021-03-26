@@ -541,13 +541,23 @@ if __name__ == '__main__':
                     # Forward pass
                     outputs = model(images)
 
+                    if args.uncertainty_attention and uncertainty_attention is not None:
+                        uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
+                        ua_end = batch_size * i + batch_size
+                        ua_start = batch_size * i
+                        if ua_end < len(uncertainty_attention_resize):
+                            batch_ua = uncertainty_attention_resize[ua_start:ua_end]
+                        else:
+                            batch_ua = uncertainty_attention_resize[ua_start:]
+                        batch_ua_torch = torch.from_numpy(batch_ua).to(device)
+
                     if args.loss_function == 'rmse':
                         loss = torch.sqrt(mse_loss(outputs, labels))
                     elif args.loss_function == 'smoothl1':
                         loss = F.smooth_l1_loss(outputs, labels)
                     elif args.loss_function == 'l1':
                         if args.uncertainty_attention and uncertainty_attention is not None:
-                            loss = torch.abs(outputs - labels)
+                            loss = (torch.abs(outputs - labels) * batch_ua_torch).sum() / outputs.data.nelement()
                         else:
                             loss = F.l1_loss(outputs, labels)
                     else:
@@ -558,8 +568,15 @@ if __name__ == '__main__':
                         mse_output_prev = (outputs_prev - labels) ** 2
                         z_flag_1 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) > args.z_score
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= args.z_score
-                        loss = loss + args.loss_lambda * (z_flag_1 * torch.sqrt(torch.abs(outputs-outputs_prev) + 1e-7)
-                                                          + z_flag_0 * (outputs-labels)**2)
+
+                        if args.uncertainty_attention and uncertainty_attention is not None:
+                            loss = loss + (args.loss_lambda * (
+                                        z_flag_1 * torch.sqrt(outputs - outputs_prev + 1e-7)
+                                        + z_flag_0 * (outputs - labels) ** 2) * batch_ua_torch).sum() / outputs.data.nelement()
+                        else:
+                            loss = loss + (args.loss_lambda * (
+                                        z_flag_1 * torch.sqrt(outputs - outputs_prev + 1e-7)
+                                        + z_flag_0 * (outputs - labels) ** 2)).sum() / outputs.data.nelement()
 
                     if args.teacher_bounded_regression and iter_i > 0:
                         outputs_prev = prev_model(images)
@@ -567,21 +584,27 @@ if __name__ == '__main__':
                         mse_output = (outputs - labels) ** 2
                         flag = (mse_output - mse_output_prev) > 0
                         if args.tbr_addition:
-                            loss = loss + args.loss_lambda * (outputs - labels)**2
+                            if args.uncertainty_attention and uncertainty_attention is not None:
+                                loss = loss + (args.loss_lambda * (outputs - labels) ** 2 * batch_ua_torch).sum() / outputs.data.nelement()
+                            else:
+                                loss = loss + (args.loss_lambda * (outputs - labels) ** 2).sum() / outputs.data.nelement()
                         else:
-                            loss = loss + args.loss_lambda * flag * (outputs - labels) ** 2
+                            if args.uncertainty_attention and uncertainty_attention is not None:
+                                loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2 * batch_ua_torch).sum() / outputs.data.nelement()
+                            else:
+                                loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
 
-                    if args.uncertainty_attention and uncertainty_attention is not None:
-                        uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
-                        ua_end = batch_size * i + batch_size
-                        ua_start = batch_size * i
-                        if ua_end < len(uncertainty_attention_resize):
-                            batch_ua = uncertainty_attention_resize[ua_start:ua_end]
-                        else:
-                            batch_ua = uncertainty_attention_resize[ua_start:]
-                        loss = loss * torch.from_numpy(batch_ua).to(device)
-
-                    loss = loss.sum() / outputs.data.nelement()
+                    # if args.uncertainty_attention and uncertainty_attention is not None:
+                    #     uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
+                    #     ua_end = batch_size * i + batch_size
+                    #     ua_start = batch_size * i
+                    #     if ua_end < len(uncertainty_attention_resize):
+                    #         batch_ua = uncertainty_attention_resize[ua_start:ua_end]
+                    #     else:
+                    #         batch_ua = uncertainty_attention_resize[ua_start:]
+                    #     loss = loss * torch.from_numpy(batch_ua).to(device)
+                    #
+                    # loss = loss.sum() / outputs.data.nelement()
 
                     # if args.uncertainty_attention and uncertainty_attention is not None:
                     #     print(loss.shape, uncertainty_attention.shape)
