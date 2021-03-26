@@ -552,7 +552,7 @@ if __name__ == '__main__':
                     elif args.loss_function == 'l1':
                         if args.uncertainty_attention and uncertainty_attention is not None:
                             print(outputs.shape, labels.shape, uncertainty_attention.shape, outputs.data.nelement())
-                            loss = torch.abs(outputs - labels).sum() * torch.from_numpy(uncertainty_attention) / outputs.data.nelement()
+                            loss = torch.abs(outputs - labels).sum() * torch.from_numpy(uncertainty_attention).to(device) / outputs.data.nelement()
                         else:
                             loss = F.l1_loss(outputs, labels)
                     else:
