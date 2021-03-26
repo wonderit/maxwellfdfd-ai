@@ -712,9 +712,12 @@ if __name__ == '__main__':
 
             # Ascending order Sorted
             rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
+            if args.rpo_type == 'max_diff_stdev':
+                rpo_array = np.std(X_pr, axis=0) * (np.max(X_pr, axis=0) - np.min(X_pr, axis=0))
             rpo_array_sum = np.sum(rpo_array, axis=1)
 
-            if args.rpo_type == 'max_diff' or args.rpo_type == 'mid_diff' or args.rpo_type == 'max_random_diff':
+            if args.rpo_type == 'max_diff' or args.rpo_type == 'mid_diff' or args.rpo_type == 'max_random_diff' \
+                    or args.rpo_type == 'max_diff_stdev':
                 rpo_array_arg_sort = np.argsort(rpo_array_sum)
             elif args.rpo_type == 'random':
                 rpo_array_arg_sort = np.random.permutation(len(rpo_array_sum))
