@@ -408,7 +408,7 @@ if __name__ == '__main__':
             return out
 
         # create loss log folder
-    al_type = 'al'
+    al_type = 'al_ua'
     if args.is_active_random:
         al_type = al_type + '_random'
 
