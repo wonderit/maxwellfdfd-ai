@@ -475,7 +475,7 @@ if __name__ == '__main__':
         # Data loader
         train_loader = torch.utils.data.DataLoader(dataset=train_set,
                                                    batch_size=batch_size,
-                                                   shuffle=True)
+                                                   shuffle=False)
 
         valid_loader = torch.utils.data.DataLoader(dataset=valid_set,
                                                    batch_size=batch_size,
@@ -490,7 +490,7 @@ if __name__ == '__main__':
 
             train_loader = torch.utils.data.DataLoader(dataset=train_set,
                                                        batch_size=batch_size,
-                                                       shuffle=True)
+                                                       shuffle=False)
 
         # Train model
         total_step = len(train_loader)
@@ -548,7 +548,14 @@ if __name__ == '__main__':
                     elif args.loss_function == 'l1':
                         if args.uncertainty_attention and uncertainty_attention is not None:
                             uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
-                            loss = (torch.abs(outputs - labels) * torch.from_numpy(uncertainty_attention_resize).to(device)).sum() / outputs.data.nelement()
+
+                            ua_end = batch_size * i + batch_size
+                            ua_start = batch_size * i
+                            if ua_end < len(uncertainty_attention_resize):
+                                batch_ua = uncertainty_attention_resize[ua_start:ua_end]
+                            else:
+                                batch_ua = uncertainty_attention_resize[ua_start:]
+                            loss = (torch.abs(outputs - labels) * torch.from_numpy(batch_ua).to(device)).sum() / outputs.data.nelement()
                         else:
                             loss = F.l1_loss(outputs, labels)
                     else:
