@@ -187,7 +187,6 @@ if __name__ == '__main__':
 
     # arg for KD
     parser.add_argument("-rm", "--remember_model", action='store_true')
-    parser.add_argument("-rms", "--remember_models", action='store_true')
     parser.add_argument("-w", "--weight", action='store_true')
     parser.add_argument("-tor", "--teacher_outlier_rejection", action='store_true')
     parser.add_argument("-tbr", "--teacher_bounded_regression", action='store_true')
@@ -235,7 +234,6 @@ if __name__ == '__main__':
         args.max_epoch = 1
         args.iteration = 2
         args.is_active_learning = True
-        args.remember_models = True
         args.uncertainty_attention = True
         args.loss_function = 'l1'
 
@@ -418,9 +416,6 @@ if __name__ == '__main__':
 
     if args.remember_model:
         al_type = al_type + '_rm'
-
-    if args.remember_models:
-        al_type = al_type + '_rms'
 
     if args.weight:
         al_type = al_type + '_weight'
@@ -680,7 +675,7 @@ if __name__ == '__main__':
                 torch.save(model.state_dict(), prev_model_path)
                 # prev_model = model
 
-            if args.remember_models:
+            if args.uncertainty_attention:
                 print('ITERATION : {}, prev {}th model updated'.format(iter_i, m))
                 torch.save(model.state_dict(), prev_models_path.format(m))
 
@@ -782,7 +777,7 @@ if __name__ == '__main__':
         L_y = L_y[shuffle_index]
 
         # add uncertainty attention
-        if args.remember_models:
+        if args.uncertainty_attention:
             print('load model and calculate uncertainty for attention model')
             X_pr_L = []
             for ua_i in range(num_models):
