@@ -819,8 +819,10 @@ if __name__ == '__main__':
                 prev_model = ConvNet(num_classes).to(device)
                 prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i)))
                 prev_model.eval()
-
-                ua_set = MaxwellFDFDDataset(L_x, L_y, transform=False)
+                if args.pseudo_label:
+                    ua_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
+                else:
+                    ua_set = MaxwellFDFDDataset(L_x, L_y, transform=False)
                 # Data loader
                 ua_loader = torch.utils.data.DataLoader(dataset=ua_set,
                                                             batch_size=batch_size,
