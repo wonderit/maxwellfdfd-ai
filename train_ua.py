@@ -200,6 +200,8 @@ if __name__ == '__main__':
     # arg for uncertainty attention
     parser.add_argument("-ua", "--uncertainty_attention", help="flag for uncertainty attention of gradients", action='store_true')
     parser.add_argument("-sb", "--sigmoid_beta", help="beta of sigmoid", type=float, default=1.0)
+    parser.add_argument("-uaa", "--uncertainty_attention_activation", help="flag for uncertainty attention of gradients",
+                        default='sigmoid')
     args = parser.parse_args()
 
     # TEST
@@ -430,7 +432,10 @@ if __name__ == '__main__':
         al_type = al_type + '_tbr_{}_lambda{}'.format(tbr_type, args.loss_lambda)
 
     if args.uncertainty_attention:
-        al_type = al_type + '_ua_beta{}'.format(args.sigmoid_beta)
+        if args.uncertainty_attention_activation == 'sigmoid':
+            al_type = al_type + '_ua_sigmoid_beta{}'.format(args.sigmoid_beta)
+        else:
+            al_type = al_type + '_ua_{}'.format(args.uncertainty_attention_activation)
 
     log_folder = 'torch/{}_{}_{}{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
         al_type, args.loss_function, args.rpo_type, args.rpo_type_lambda, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
@@ -846,4 +851,10 @@ if __name__ == '__main__':
                 rpo_ua_array = np.std(X_pr_L, axis=0)
             rpo_ua_array_average = np.average(rpo_ua_array, axis=1)
 
-            uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * rpo_ua_array_average))
+            if args.uncertainty_attention_activation == 'sigmoid':
+                uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * rpo_ua_array_average))
+            elif args.uncertainty_attention_activation == 'minmax':
+
+                minmax_ua = ( rpo_ua_array_average - np.min(rpo_ua_array_average) ) / (np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average))
+
+                uncertainty_attention = minmax_ua
