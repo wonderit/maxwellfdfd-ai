@@ -452,8 +452,8 @@ if __name__ == '__main__':
         else:
             al_type = al_type + '_ua_{}'.format(args.uncertainty_attention_activation)
 
-    log_folder = 'torch/{}_{}_{}{}_n{}_b{}_e{}_lr{}_it{}_R{}'.format(
-        al_type, args.loss_function, args.rpo_type, args.rpo_type_lambda, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio
+    log_folder = 'torch/{}_{}_{}{}_n{}_b{}_e{}_lr{}_it{}_R{}_T{}'.format(
+        al_type, args.loss_function, args.rpo_type, args.rpo_type_lambda, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio, args.top_ratio
     )
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
