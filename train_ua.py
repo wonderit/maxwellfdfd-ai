@@ -469,8 +469,8 @@ if __name__ == '__main__':
         os.makedirs(torch_model_folder)
 
     prev_model = None
-    prev_model_path = 'prev_model.pth'
-    prev_models_path = 'prev_{}th_model.pth'
+    prev_model_path = 'prev_model_gpu{}.pth'.format(args.gpu)
+    prev_models_path = 'prev_{}th_model_gpu{}.pth'
     prev_models = []
     uncertainty_attention = None
     for iter_i in range(ITERATION):
@@ -732,7 +732,7 @@ if __name__ == '__main__':
 
             if args.uncertainty_attention:
                 print('ITERATION : {}, prev {}th model updated'.format(iter_i, m))
-                torch.save(model.state_dict(), prev_models_path.format(m))
+                torch.save(model.state_dict(), prev_models_path.format(m, args.gpu))
 
             # Save learning curve
             plt.clf()
@@ -837,7 +837,7 @@ if __name__ == '__main__':
             X_pr_L = []
             for ua_i in range(num_models):
                 prev_model = ConvNet(num_classes).to(device)
-                prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i)))
+                prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu)))
                 prev_model.eval()
                 if args.pseudo_label:
                     ua_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
