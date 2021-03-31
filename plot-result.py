@@ -3,6 +3,8 @@
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
+import numpy as np
+
 def search(dirname):
     filenames = os.listdir(dirname)
     return filenames
@@ -74,5 +76,7 @@ result_df.plot(kind='line',use_index=True, x='x', y='min_diff', color='orange', 
 
 plt.xlabel('Number of labeled images')
 plt.ylabel('R-squared')
+
+plt.xticks(np.arange(k, 11 * k + 1, step=k))
 
 plt.savefig('fig_result-min-max-mid.png', dpi=300)
