@@ -191,6 +191,7 @@ if __name__ == '__main__':
 
     # arg for wd
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.1)
+    parser.add_argument("-wds", "--weight_decay_schedule", action='store_true')
 
     # arg for gpu
     parser.add_argument("-g", "--gpu", help="set gpu num", type=int, default=0)
@@ -549,6 +550,15 @@ if __name__ == '__main__':
             # Loss and optimizer
             # criterion = nn.MSELoss()
             # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+            weight_decay = args.weight_decay
+
+            # N1 / N2 * lambda = K / 2K
+            if args.weight_decay_schedule:
+                weight_decay = weight_decay * (0.5 ** iter_i)
+
+            print(f'weight decay : {weight_decay}, iter_i:{iter_i}')
+
             if args.optimizer == 'adam':
                 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=args.weight_decay)
             else:
