@@ -404,7 +404,6 @@ if __name__ == '__main__':
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.fc1 = nn.Linear(4608, 1024)
-            self.fc_bn = nn.BatchNorm1d(1024)
             self.fc2 = nn.Linear(1024, num_classes)
             self.dropout = nn.Dropout(p=0.4)
 
@@ -415,7 +414,6 @@ if __name__ == '__main__':
             out = self.layer4(out)
             out = out.reshape(out.size(0), -1)
             out = self.fc1(out)
-            out = self.fc_bn(out)
             out = self.dropout(out)
             out = self.fc2(out)
             out = torch.sigmoid(out)
