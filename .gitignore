@@ -177,3 +177,4 @@ result*/
 *.pt
 *.pth
 *.ckpt
+fig*.png

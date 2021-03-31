@@ -173,9 +173,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--num_models", help="Set number of models for active regressors", type=int, default=3)
     parser.add_argument("-a", "--is_active_learning", help="Set is AL", action='store_true')
     parser.add_argument("-ar", "--is_active_random", help="Set is AL random set", action='store_true')
-    parser.add_argument("-r", "--labeled_ratio", help="Set R", type=float, default=0.2)
-    parser.add_argument("-k", "--labeled_number", help="Set K", type=int, default=200)
-    parser.add_argument("-t", "--top_ratio", help="Set T", type=float, default=0.1)
+    parser.add_argument("-k", "--sample_number", help="Set K", type=int, default=200)
     parser.add_argument("-ll", "--loss_lambda", help="set loss lambda", type=float, default=0.5)
     parser.add_argument("-rtl", "--rpo_type_lambda", help="max random data ratio", type=float, default=0.5)
 
@@ -251,9 +249,9 @@ if __name__ == '__main__':
     x_train = []
     y_train = []
 
-    print('Training model args : batch_size={}, max_epoch={}, lr={}, loss_function={}, al={}, iter={}, R={}, T={}'
+    print('Training model args : batch_size={}, max_epoch={}, lr={}, loss_function={}, al={}, iter={}, K={}'
           .format(args.batch_size, args.max_epoch, args.learning_rate, args.loss_function, args.is_active_learning,
-                  args.iteration, args.labeled_ratio, args.top_ratio))
+                  args.iteration, args.sample_number))
 
     print('Data Loading... Train dataset Start.')
 
@@ -360,10 +358,10 @@ if __name__ == '__main__':
         print('Labeled Dataset row : {}'.format(n_row))
 
         shuffled_indices = np.random.permutation(n_row)
-        labeled_set_size = int(n_row * args.labeled_ratio)
+        labeled_set_size = args.sample_number
 
         if args.is_active_random:
-            labeled_set_size = labeled_set_size * 2
+            labeled_set_size = labeled_set_size * args.iteration
 
         # random_row = random.sample(list(range(n_row)), random_n_row)
         L_indices = shuffled_indices[:labeled_set_size]
@@ -381,7 +379,6 @@ if __name__ == '__main__':
             PL_y = L_y
 
 
-    # Convolutional neural network (two convolutional layers)
     class ConvNet(nn.Module):
         def __init__(self, num_classes=24):
             super(ConvNet, self).__init__()
@@ -446,8 +443,8 @@ if __name__ == '__main__':
         else:
             al_type = al_type + '_ua_{}'.format(args.uncertainty_attention_activation)
 
-    log_folder = 'torch/{}_{}_{}{}_n{}_b{}_e{}_lr{}_it{}_R{}_T{}'.format(
-        al_type, args.loss_function, args.rpo_type, args.rpo_type_lambda, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.labeled_ratio, args.top_ratio
+    log_folder = 'torch/{}_{}_{}{}_n{}_b{}_e{}_lr{}_it{}_K{}'.format(
+        al_type, args.loss_function, args.rpo_type, args.rpo_type_lambda, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
     )
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
@@ -511,7 +508,7 @@ if __name__ == '__main__':
 
         # active regressor
         for m in range(num_models):
-            print('Training models ({}/{}), Labeled data size: {}'.format(m + 1, num_models, total_step * batch_size))
+            print('Training models ({}/{}), Labeled data size: {}'.format(m + 1, num_models, (iter_i+1) * args.sample_number))
             # train, val loss
             val_loss_array = []
             train_loss_array = []
@@ -779,7 +776,7 @@ if __name__ == '__main__':
                 rpo_array_arg_sort = np.argsort(-rpo_array_sum)
 
             # add labeled to L_iter
-            T_indices = int(len(x_train) * args.labeled_ratio * args.top_ratio)
+            T_indices = args.sample_number
             U_length = len(rpo_array_arg_sort) - T_indices
             if args.rpo_type == 'mid_diff':
                 start_idx = int(U_length / 2)
