@@ -46,11 +46,16 @@ models_random = search('torch/al_ua_l1_random0.5_n3_b32_e100_lr0.001_it10_K200/m
 df_random = parse_result(models_random)
 result_df['random'] = df_random['r2']
 
-#%% max_random_diff 0.5
-models_random = search('torch/al_ua_l1_max_random_diff0.5_n3_b32_e100_lr0.001_it10_K200/model')
+#%% mid_diff 0.5
+models_random = search('torch/al_ua_l1_mid_diff0.5_n3_b32_e100_lr0.001_it10_K200/model')
 df_random = parse_result(models_random)
-result_df['max_random_diff'] = df_random['r2']
+result_df['mid_diff'] = df_random['r2']
 
+
+#%% min_diff 0.5
+models_random = search('torch/al_ua_l1_min_diff0.5_n3_b32_e100_lr0.001_it10_K200/model')
+df_random = parse_result(models_random)
+result_df['mid_diff'] = df_random['r2']
 
 #%%
 
@@ -58,13 +63,16 @@ result_df['max_random_diff'] = df_random['r2']
 # gca stands for 'get current axis'
 ax = plt.gca()
 
-result_df.plot(kind='line',use_index=True,y='max_diff', color='blue', ax=ax)
-result_df.plot(kind='line',use_index=True,y='random', color='black', ax=ax)
-result_df.plot(kind='line',use_index=True,y='max_random_diff', color='red', ax=ax)
 
-plt.xlabel('Iteration')
+k = 200
+result_df['x'] = list(range(k, 11 * k + 1, k))
+
+result_df.plot(kind='line',use_index=True, x='x', y='max_diff', color='blue', ax=ax)
+result_df.plot(kind='line',use_index=True, x='x', y='random', color='black', ax=ax)
+result_df.plot(kind='line',use_index=True, x='x', y='mid_diff', color='red', ax=ax)
+result_df.plot(kind='line',use_index=True, x='x', y='min_diff', color='orange', ax=ax)
+
+plt.xlabel('Number of labeled images')
 plt.ylabel('R-squared')
 
-plt.savefig('fig_result.png', dpi=300)
-
-plt.show()
+plt.savefig('fig_result-min-max-mid.png', dpi=300)
