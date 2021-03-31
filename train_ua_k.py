@@ -152,8 +152,6 @@ def sqrt_loss(input, target):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model", help="Select model type.", default="cnn")
-    parser.add_argument("-s", "--shape", help="Select input image shape. (rectangle or square?)", default="rect")
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="rmse")
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.0005)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
@@ -162,9 +160,6 @@ if __name__ == '__main__':
     # arg for testing parameters
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
-
-    # arg for rpo lossfunction
-    parser.add_argument("-dm", "--is_different_models", action='store_true')
 
     parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
     # arg for AL
@@ -221,7 +216,6 @@ if __name__ == '__main__':
     # batch_size = 128
     # learning_rate = 0.001
 
-    model_name = args.model
     batch_size = int(args.batch_size)
     num_epochs = int(args.max_epoch)
     loss_functions = args.loss_function
@@ -448,8 +442,8 @@ if __name__ == '__main__':
         else:
             al_type = al_type + '_ua_{}'.format(args.uncertainty_attention_activation)
 
-    log_folder = 'torch/{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
-        al_type, args.loss_function, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
+    log_folder = 'torch/{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
+        al_type, args.loss_function, args.optimizer, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
     )
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
@@ -532,7 +526,10 @@ if __name__ == '__main__':
             # Loss and optimizer
             # criterion = nn.MSELoss()
             # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=args.weight_decay)
+            if args.optimizer == 'adam':
+                optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=args.weight_decay)
+            else:
+                optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=args.weight_decay)
 
             # Lr scheduler
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
