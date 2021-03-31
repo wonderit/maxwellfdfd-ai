@@ -155,7 +155,7 @@ if __name__ == '__main__':
     parser.add_argument("-m", "--model", help="Select model type.", default="cnn")
     parser.add_argument("-s", "--shape", help="Select input image shape. (rectangle or square?)", default="rect")
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="rmse")
-    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
+    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.0005)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
@@ -384,23 +384,23 @@ if __name__ == '__main__':
         def __init__(self, num_classes=24):
             super(ConvNet, self).__init__()
             self.layer1 = nn.Sequential(
-                nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.BatchNorm2d(16),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.layer2 = nn.Sequential(
-                nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.BatchNorm2d(32),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.layer3 = nn.Sequential(
-                nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.BatchNorm2d(32),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.layer4 = nn.Sequential(
-                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
-                nn.BatchNorm2d(64),
+                nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.BatchNorm2d(32),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.fc1 = nn.Linear(4608, 1024)
