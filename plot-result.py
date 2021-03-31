@@ -55,7 +55,7 @@ result_df['mid_diff'] = df_random['r2']
 #%% min_diff 0.5
 models_random = search('torch/al_ua_l1_min_diff0.5_n3_b32_e100_lr0.001_it10_K200/model')
 df_random = parse_result(models_random)
-result_df['mid_diff'] = df_random['r2']
+result_df['min_diff'] = df_random['r2']
 
 #%%
 
