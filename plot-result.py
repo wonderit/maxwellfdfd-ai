@@ -36,7 +36,7 @@ def parse_result(models):
     result = result.round(4)
     return result
 #%% Max diff start
-models_max_diff = search('torch/al_ua_l1_max_diff0.5_n3_b32_e100_lr0.001_it10_K200/model')
+models_max_diff = search('torch/al_ua_l1_max_diff0.5_n3_b32_e100_lr0.001_it10_K100/model')
 df_max_diff = parse_result(models_max_diff)
 
 selected_columns = df_max_diff[['r2']]
@@ -44,18 +44,18 @@ result_df = selected_columns.copy()
 result_df.rename(columns={'r2':'max_diff'}, inplace=True)
 
 #%% random
-models_random = search('torch/al_ua_l1_random0.5_n3_b32_e100_lr0.001_it10_K200/model')
+models_random = search('torch/al_ua_l1_random0.5_n3_b32_e100_lr0.001_it10_K100/model')
 df_random = parse_result(models_random)
 result_df['random'] = df_random['r2']
 
 #%% mid_diff 0.5
-models_random = search('torch/al_ua_l1_mid_diff0.5_n3_b32_e100_lr0.001_it10_K200/model')
+models_random = search('torch/al_ua_l1_mid_diff0.5_n3_b32_e100_lr0.001_it10_K100/model')
 df_random = parse_result(models_random)
 result_df['mid_diff'] = df_random['r2']
 
 
 #%% min_diff 0.5
-models_random = search('torch/al_ua_l1_min_diff0.5_n3_b32_e100_lr0.001_it10_K200/model')
+models_random = search('torch/al_ua_l1_min_diff0.5_n3_b32_e100_lr0.001_it10_K100/model')
 df_random = parse_result(models_random)
 result_df['min_diff'] = df_random['r2']
 
@@ -66,7 +66,7 @@ result_df['min_diff'] = df_random['r2']
 ax = plt.gca()
 
 
-k = 200
+k = 100
 result_df['x'] = list(range(k, 11 * k + 1, k))
 
 result_df.plot(kind='line',use_index=True, x='x', y='max_diff', color='blue', ax=ax)
@@ -79,4 +79,4 @@ plt.ylabel('R-squared')
 
 plt.xticks(np.arange(k, 11 * k + 1, step=k))
 
-plt.savefig('fig_result-min-max-mid.png', dpi=300)
+plt.savefig('fig_result-min-max-mid-K100.png', dpi=300)

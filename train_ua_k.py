@@ -164,7 +164,6 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
 
     # arg for rpo lossfunction
-    parser.add_argument("-dl", "--is_different_losses", action='store_true')
     parser.add_argument("-dm", "--is_different_models", action='store_true')
 
     parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
@@ -193,6 +192,9 @@ if __name__ == '__main__':
     parser.add_argument("-sb", "--sigmoid_beta", help="beta of sigmoid", type=float, default=1.0)
     parser.add_argument("-uaa", "--uncertainty_attention_activation", help="flag for uncertainty attention of gradients",
                         default='sigmoid')
+
+    # arg for wd
+    parser.add_argument("-wd", "--weight_decay", type=float, default=0.1)
 
     # arg for gpu
     parser.add_argument("-g", "--gpu", help="set gpu num", type=int, default=0)
@@ -371,7 +373,7 @@ if __name__ == '__main__':
 
         U_x = x_train[U_indices]
         U_y = y_train[U_indices]
-        ITERATION = ITERATION + 1
+        # ITERATION = ITERATION + 1
 
         if args.pseudo_label:
             PL_x = L_x
@@ -383,18 +385,22 @@ if __name__ == '__main__':
             super(ConvNet, self).__init__()
             self.layer1 = nn.Sequential(
                 nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.layer2 = nn.Sequential(
                 nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.layer3 = nn.Sequential(
                 nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.layer4 = nn.Sequential(
                 nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
             self.fc1 = nn.Linear(4608, 1024)
@@ -414,7 +420,7 @@ if __name__ == '__main__':
             return out
 
         # create loss log folder
-    al_type = 'al_ua'
+    al_type = 'al'
     if args.is_active_random:
         al_type = al_type + '_random'
 
@@ -442,8 +448,8 @@ if __name__ == '__main__':
         else:
             al_type = al_type + '_ua_{}'.format(args.uncertainty_attention_activation)
 
-    log_folder = 'torch/{}_{}_{}{}_n{}_b{}_e{}_lr{}_it{}_K{}'.format(
-        al_type, args.loss_function, args.rpo_type, args.rpo_type_lambda, args.num_models, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
+    log_folder = 'torch/{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
+        al_type, args.loss_function, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
     )
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
@@ -471,9 +477,6 @@ if __name__ == '__main__':
             print('L_x, L_y shape:', L_x.shape, L_y.shape)
             print(L_x.shape[0], 'Labeled samples')
             print(U_x.shape[0], 'Unlabeled samples')
-        if iter_i == (ITERATION - 1):
-            num_models = 7
-            is_different_losses = False
 
         #set data
         train_set = MaxwellFDFDDataset(L_x, L_y, transform=False)
@@ -528,7 +531,8 @@ if __name__ == '__main__':
 
             # Loss and optimizer
             # criterion = nn.MSELoss()
-            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+            # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+            optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=args.weight_decay)
 
             # Lr scheduler
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
