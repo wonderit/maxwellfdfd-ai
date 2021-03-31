@@ -187,7 +187,6 @@ if __name__ == '__main__':
     parser.add_argument("-pl", "--pseudo_label", action='store_true')
     # arg for rpo type
     parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff, random)", default='max_diff')
-    parser.add_argument("-rts", "--rpo_type_schedule", help="rpo type scheduling", action='store_true')
 
     # arg for uncertainty attention
     parser.add_argument("-ua", "--uncertainty_attention", help="flag for uncertainty attention of gradients", action='store_true')
