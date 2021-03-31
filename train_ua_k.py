@@ -162,6 +162,7 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
 
     parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
+    parser.add_argument("-bn", "--is_batch_norm", help="Set is_batch_norm", action='store_true')
     # arg for AL
     parser.add_argument("-it", "--iteration", help="Set iteration for AL", type=int, default=1)
     parser.add_argument("-n", "--num_models", help="Set number of models for active regressors", type=int, default=3)
@@ -377,26 +378,44 @@ if __name__ == '__main__':
     class ConvNet(nn.Module):
         def __init__(self, num_classes=24):
             super(ConvNet, self).__init__()
-            self.layer1 = nn.Sequential(
-                nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.BatchNorm2d(16),
-                nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2))
-            self.layer2 = nn.Sequential(
-                nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.BatchNorm2d(32),
-                nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2))
-            self.layer3 = nn.Sequential(
-                nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.BatchNorm2d(32),
-                nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2))
-            self.layer4 = nn.Sequential(
-                nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.BatchNorm2d(32),
-                nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2))
+            if args.is_batch_norm:
+                self.layer1 = nn.Sequential(
+                    nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.BatchNorm2d(16),
+                    nn.ReLU(),
+                    nn.MaxPool2d(kernel_size=2, stride=2))
+                self.layer2 = nn.Sequential(
+                    nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.BatchNorm2d(32),
+                    nn.ReLU(),
+                    nn.MaxPool2d(kernel_size=2, stride=2))
+                self.layer3 = nn.Sequential(
+                    nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.BatchNorm2d(32),
+                    nn.ReLU(),
+                    nn.MaxPool2d(kernel_size=2, stride=2))
+                self.layer4 = nn.Sequential(
+                    nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.BatchNorm2d(32),
+                    nn.ReLU(),
+                    nn.MaxPool2d(kernel_size=2, stride=2))
+            else:
+                self.layer1 = nn.Sequential(
+                    nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.ReLU(),
+                    nn.MaxPool2d(kernel_size=2, stride=2))
+                self.layer2 = nn.Sequential(
+                    nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.ReLU(),
+                    nn.MaxPool2d(kernel_size=2, stride=2))
+                self.layer3 = nn.Sequential(
+                    nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.ReLU(),
+                    nn.MaxPool2d(kernel_size=2, stride=2))
+                self.layer4 = nn.Sequential(
+                    nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.ReLU(),
+                    nn.MaxPool2d(kernel_size=2, stride=2))
             self.fc1 = nn.Linear(2304, 1024)
             self.fc2 = nn.Linear(1024, num_classes)
             self.dropout = nn.Dropout(p=0.4)
@@ -423,6 +442,10 @@ if __name__ == '__main__':
 
     if args.remember_model:
         al_type = al_type + '_rm'
+    if args.is_batch_norm:
+        al_type = al_type + '_bn'
+    else:
+        al_type = al_type + '_nobn'
 
     if args.weight:
         al_type = al_type + '_weight'
