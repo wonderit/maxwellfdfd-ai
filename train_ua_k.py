@@ -451,6 +451,9 @@ if __name__ == '__main__':
     if args.weight:
         al_type = al_type + '_weight'
 
+    if args.weight_decay_schedule:
+        al_type = al_type + '_wds'
+
     if args.teacher_outlier_rejection:
         al_type = al_type + '_tor_z{}_lambda{}'.format(args.z_score, args.loss_lambda)
 
