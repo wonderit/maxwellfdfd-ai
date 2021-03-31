@@ -155,7 +155,7 @@ if __name__ == '__main__':
     parser.add_argument("-m", "--model", help="Select model type.", default="cnn")
     parser.add_argument("-s", "--shape", help="Select input image shape. (rectangle or square?)", default="rect")
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="rmse")
-    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.01)
+    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
@@ -532,7 +532,7 @@ if __name__ == '__main__':
             # Loss and optimizer
             # criterion = nn.MSELoss()
             # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-            optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=args.weight_decay)
+            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=args.weight_decay)
 
             # Lr scheduler
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
