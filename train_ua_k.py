@@ -403,7 +403,7 @@ if __name__ == '__main__':
                 nn.BatchNorm2d(32),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2))
-            self.fc1 = nn.Linear(4608, 1024)
+            self.fc1 = nn.Linear(2304, 1024)
             self.fc2 = nn.Linear(1024, num_classes)
             self.dropout = nn.Dropout(p=0.4)
 
