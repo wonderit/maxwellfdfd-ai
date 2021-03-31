@@ -540,11 +540,13 @@ if __name__ == '__main__':
 
             # Early Stopping
             early_stopping = EarlyStopping(patience=8, verbose=True)
+            early_stopped_epoch = 0
 
             for epoch in range(num_epochs):
                 model.train()
                 train_loss = 0
                 count = 0
+                early_stopped_epoch = epoch + 1
                 for i, (images, labels) in enumerate(train_loader):
                     images = images.to(device)
                     labels = labels.to(device)
@@ -715,7 +717,7 @@ if __name__ == '__main__':
 
             # Save the model checkpoint
             model_file_name = '{}/model_it{}_m{}-{:.4f}-{:.4f}-ep{}-lr{}.ckpt'.format(torch_model_folder, iter_i, m,
-                                                                                      test_rmse, test_r2, num_epochs, learning_rate)
+                                                                                      test_rmse, test_r2, early_stopped_epoch, learning_rate)
             torch.save(model.state_dict(), model_file_name)
 
             # remove m == 0
@@ -738,7 +740,7 @@ if __name__ == '__main__':
             plt.legend(['Training', 'Validation'], loc='upper right')
             log_curve_file_name = '{}/log-curve-it{}-m{}-{:.4f}-{:.4f}-ep{}-lr{}.png'.format(torch_loss_folder,
                                                                                              iter_i, m,
-                                                                                             test_rmse, test_r2, num_epochs,
+                                                                                             test_rmse, test_r2, early_stopped_epoch,
                                                                                      learning_rate)
             plt.savefig(log_curve_file_name)
 
