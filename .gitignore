@@ -178,3 +178,5 @@ result*/
 *.pth
 *.ckpt
 fig*.png
+result-*.png
+plot-result

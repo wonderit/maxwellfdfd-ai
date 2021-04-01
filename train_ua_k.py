@@ -185,9 +185,11 @@ if __name__ == '__main__':
 
     # arg for uncertainty attention
     parser.add_argument("-ua", "--uncertainty_attention", help="flag for uncertainty attention of gradients", action='store_true')
+
     parser.add_argument("-sb", "--sigmoid_beta", help="beta of sigmoid", type=float, default=1.0)
     parser.add_argument("-uaa", "--uncertainty_attention_activation", help="flag for uncertainty attention of gradients",
                         default='sigmoid')
+    parser.add_argument("-ut", "--uncertainty_attention_type", default='multiply')
 
     # arg for wd
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.1)
@@ -466,9 +468,9 @@ if __name__ == '__main__':
 
     if args.uncertainty_attention:
         if args.uncertainty_attention_activation == 'sigmoid':
-            al_type = al_type + '_ua_sigmoid_beta{}'.format(args.sigmoid_beta)
+            al_type = al_type + '_ua{}_sigmoid_beta{}'.format(args.uncertainty_attention_type, args.sigmoid_beta)
         else:
-            al_type = al_type + '_ua_{}'.format(args.uncertainty_attention_activation)
+            al_type = al_type + '_ua{}_{}'.format(args.uncertainty_attention_type, args.uncertainty_attention_activation)
 
     log_folder = 'torch/{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
         al_type, args.loss_function, args.optimizer, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
@@ -613,7 +615,10 @@ if __name__ == '__main__':
                         loss = F.smooth_l1_loss(outputs, labels)
                     elif args.loss_function == 'l1':
                         if args.uncertainty_attention and uncertainty_attention is not None:
-                            loss = (torch.abs(outputs - labels) * batch_ua_torch).sum() / outputs.data.nelement()
+                            if args.uncertainty_attention_type == 'multiply':
+                                loss = (torch.abs(outputs - labels) * batch_ua_torch).sum() / outputs.data.nelement()
+                            else:
+                                loss = (torch.abs(outputs - labels) + batch_ua_torch).sum() / outputs.data.nelement()
                         else:
                             loss = F.l1_loss(outputs, labels)
                     else:
