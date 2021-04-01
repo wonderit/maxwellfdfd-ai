@@ -36,7 +36,7 @@ def parse_result(models):
     result = result.round(4)
     return result
 #%% Max diff start
-models_max_diff = search('torch/al_ua_l1_max_diff0.5_n3_b32_e100_lr0.001_it10_K100/model')
+models_max_diff = search('torch/al_bn_l1_adamw_max_diff0.5_wd0.02_b32_e100_lr1.001_it10_K100/model')
 df_max_diff = parse_result(models_max_diff)
 
 selected_columns = df_max_diff[['r2']]
@@ -44,20 +44,20 @@ result_df = selected_columns.copy()
 result_df.rename(columns={'r2':'max_diff'}, inplace=True)
 
 #%% random
-models_random = search('torch/al_ua_l1_random0.5_n3_b32_e100_lr0.001_it10_K100/model')
+models_random = search('torch/al_bn_l1_adamw_random0.5_wd0.02_b32_e100_lr1.001_it10_K100/model')
 df_random = parse_result(models_random)
 result_df['random'] = df_random['r2']
-
-#%% mid_diff 0.5
-models_random = search('torch/al_ua_l1_mid_diff0.5_n3_b32_e100_lr0.001_it10_K100/model')
-df_random = parse_result(models_random)
-result_df['mid_diff'] = df_random['r2']
-
-
-#%% min_diff 0.5
-models_random = search('torch/al_ua_l1_min_diff0.5_n3_b32_e100_lr0.001_it10_K100/model')
-df_random = parse_result(models_random)
-result_df['min_diff'] = df_random['r2']
+#
+# #%% mid_diff 0.5
+# models_random = search('torch/al_ua_l1_mid_diff0.5_n3_b32_e100_lr0.001_it10_K100/model')
+# df_random = parse_result(models_random)
+# result_df['mid_diff'] = df_random['r2']
+#
+#
+# #%% min_diff 0.5
+# models_random = search('torch/al_ua_l1_min_diff0.5_n3_b32_e100_lr0.001_it10_K100/model')
+# df_random = parse_result(models_random)
+# result_df['min_diff'] = df_random['r2']
 
 #%%
 
@@ -71,8 +71,8 @@ result_df['x'] = list(range(k, 11 * k + 1, k))
 
 result_df.plot(kind='line',use_index=True, x='x', y='max_diff', color='blue', ax=ax)
 result_df.plot(kind='line',use_index=True, x='x', y='random', color='black', ax=ax)
-result_df.plot(kind='line',use_index=True, x='x', y='mid_diff', color='red', ax=ax)
-result_df.plot(kind='line',use_index=True, x='x', y='min_diff', color='orange', ax=ax)
+# result_df.plot(kind='line',use_index=True, x='x', y='mid_diff', color='red', ax=ax)
+# result_df.plot(kind='line',use_index=True, x='x', y='min_diff', color='orange', ax=ax)
 
 plt.xlabel('Number of labeled images')
 plt.ylabel('R-squared')
