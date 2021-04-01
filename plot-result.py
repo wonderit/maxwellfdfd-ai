@@ -67,7 +67,7 @@ ax = plt.gca()
 
 
 k = 100
-result_df['x'] = list(range(k, 11 * k + 1, k))
+result_df['x'] = list(range(k, 10 * k + 1, k))
 
 result_df.plot(kind='line',use_index=True, x='x', y='max_diff', color='blue', ax=ax)
 result_df.plot(kind='line',use_index=True, x='x', y='random', color='black', ax=ax)
