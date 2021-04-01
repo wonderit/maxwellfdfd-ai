@@ -635,7 +635,7 @@ if __name__ == '__main__':
                         if args.uncertainty_attention and uncertainty_attention is not None:
                             loss = loss + (args.loss_lambda * (
                                         z_flag_1 * torch.sqrt(torch.abs(outputs - outputs_prev) + 1e-7)
-                                        + z_flag_0 * (outputs - labels) ** 2) * batch_ua_torch).sum() / outputs.data.nelement()
+                                        + z_flag_0 * (outputs - labels) ** 2) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
                         else:
                             loss = loss + (args.loss_lambda * (
                                         z_flag_1 * torch.sqrt(torch.abs(outputs - outputs_prev) + 1e-7)
@@ -648,12 +648,12 @@ if __name__ == '__main__':
                         flag = (mse_output - mse_output_prev) > 0
                         if args.tbr_addition:
                             if args.uncertainty_attention and uncertainty_attention is not None:
-                                loss = loss + (args.loss_lambda * (outputs - labels) ** 2 * batch_ua_torch).sum() / outputs.data.nelement()
+                                loss = loss + (args.loss_lambda * (outputs - labels) ** 2 * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
                             else:
                                 loss = loss + (args.loss_lambda * (outputs - labels) ** 2).sum() / outputs.data.nelement()
                         else:
                             if args.uncertainty_attention and uncertainty_attention is not None:
-                                loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2 * batch_ua_torch).sum() / outputs.data.nelement()
+                                loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2 * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
                             else:
                                 loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
 
