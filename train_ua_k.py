@@ -617,6 +617,8 @@ if __name__ == '__main__':
                         if args.uncertainty_attention and uncertainty_attention is not None:
                             if args.uncertainty_attention_type == 'multiply':
                                 loss = (torch.abs(outputs - labels) * batch_ua_torch).sum() / outputs.data.nelement()
+                            elif args.uncertainty_attention_type == 'residual':
+                                loss = (torch.abs(outputs - labels) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
                             else:
                                 loss = (torch.abs(outputs - labels) + batch_ua_torch).sum() / outputs.data.nelement()
                         else:
