@@ -475,6 +475,7 @@ if __name__ == '__main__':
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
     torch_model_folder = '{}/model'.format(log_folder)
+    torch_model_result_text_folder = '{}/txt'.format(log_folder)
 
     if not os.path.exists(log_folder):
         os.makedirs(log_folder)
@@ -484,6 +485,9 @@ if __name__ == '__main__':
 
     if not os.path.exists(torch_model_folder):
         os.makedirs(torch_model_folder)
+
+    if not os.path.exists(torch_model_result_text_folder):
+        os.makedirs(torch_model_result_text_folder)
 
     prev_model = None
     prev_model_path = 'prev_model_gpu{}.pth'.format(args.gpu)
@@ -751,9 +755,15 @@ if __name__ == '__main__':
                              model_number=m)
 
             # Save the model checkpoint
-            model_file_name = '{}/model_it{}_m{}-{:.4f}-{:.4f}-ep{}-lr{}.ckpt'.format(torch_model_folder, iter_i, m,
+            # model_file_name = '{}/model_it{}_m{}-{:.4f}-{:.4f}-ep{}-lr{}.ckpt'.format(torch_model_folder, iter_i, m,
+            #                                                                           test_rmse, test_r2, early_stopped_epoch, learning_rate)
+            # torch.save(model.state_dict(), model_file_name)
+
+            # Save the model result text
+            model_file_result = '{}/model_it{}_m{}-{:.4f}-{:.4f}-ep{}-lr{}.txt'.format(torch_model_result_text_folder, iter_i, m,
                                                                                       test_rmse, test_r2, early_stopped_epoch, learning_rate)
-            torch.save(model.state_dict(), model_file_name)
+            with open(model_file_result, "w") as f:
+                f.write(f'{model_file_result}')
 
             # remove m == 0
             if args.remember_model:
