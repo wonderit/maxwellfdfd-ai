@@ -760,7 +760,7 @@ if __name__ == '__main__':
             # torch.save(model.state_dict(), model_file_name)
 
             # Save the model result text
-            model_file_result = '{}/model_it{}_m{}-{:.4f}-{:.4f}-ep{}-lr{}.txt'.format(torch_model_result_text_folder, iter_i, m,
+            model_file_result = '{}/model_it{}_m{}_{:.4f}_{:.4f}_ep{}_lr{}.txt'.format(torch_model_result_text_folder, iter_i, m,
                                                                                       test_rmse, test_r2, early_stopped_epoch, learning_rate)
             with open(model_file_result, "w") as f:
                 f.write(f'{model_file_result}')
