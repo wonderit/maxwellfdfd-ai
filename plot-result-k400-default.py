@@ -62,6 +62,11 @@ MODEL_ARRAY = [
         'color': 'red',
         'name': 'mid',
         'path': 'torch/rpo_compare_k400/al_g0_s1_bn_l1_adamw_mid_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
+    },
+    {
+        'color': 'orange',
+        'name': 'max_var',
+        'path': 'torch/rpo_compare_k400/al_g0_s0_bn_l1_adamw_max_stdev0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
     }
 ]
 
@@ -85,4 +90,4 @@ plt.ylabel('R-squared')
 
 plt.xticks(np.arange(k, 5 * k + 1, step=k))
 
-plt.savefig('result-K400-minmaxran.png', dpi=300)
+plt.savefig('result-k400-baseline.png', dpi=300)

@@ -44,43 +44,41 @@ def parse_result(models):
 #%% random
 MODEL_ARRAY = [
     {
-        'color': 'black',
+        'color': 'k',
         'name': 'random',
         'path': 'torch/rpo_compare_k400/al_bn_l1_adamw_random0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
     },
     {
-        'color': 'blue',
-        'name': 'max_diff',
+        'color': 'g',
+        'name': 'max',
+        'path': 'torch/rpo_compare_k400/al_bn_l1_adamw_max_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
+    },
+
+    {
+        'color': 'r',
+        'name': 'wds_max',
+        'path': 'torch/rpo_compare_k400/al_bn_wds_l1_adamw_max_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
+    },
+    {
+        'color': 'lightgray',
+        'name': 'max',
         'path': 'torch/rpo_compare_k400/al_bn_l1_adamw_max_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
     },
     {
-        'color': 'green',
-        'name': 'min_diff',
-        'path': 'torch/rpo_compare_k400/al_bn_l1_adamw_min_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
+        'color': 'm',
+        'name': 'ua_b10_max',
+        'path': 'torch/rpo_compare_k400/al_g0_s0_bn_uamultiply_sigmoid_beta10.0_l1_adamw_max_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
     },
     {
-        'color': 'red',
-        'name': 'wds_max',
-        'path': 'torch/rpo_compare_k400/al_bn_wds_l1_adamw_max_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
-    }
-,
+        'color': 'y',
+        'name': 'ua_b100_max',
+        'path': 'torch/rpo_compare_k400/al_g1_s0_bn_uamultiply_sigmoid_beta100.0_l1_adamw_max_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
+    },
     {
-        'color': 'pink',
-        'name': 'ua_b1',
-        'path': 'torch/rpo_compare_k400/al_g1_s0_bn_ua_sigmoid_beta1.0_l1_adamw_random0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
-    }
-,
-    {
-        'color': 'orange',
-        'name': 'ua_b10',
-        'path': 'torch/rpo_compare_k400/al_g0_s0_bn_ua_sigmoid_beta10.0_l1_adamw_random0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
-    }
-,
-    {
-        'color': 'gray',
-        'name': 'ua_add_b10',
-        'path': 'torch/rpo_compare_k400/al_g1_s0_bn_uaadd_sigmoid_beta10.0_l1_adamw_random0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
-    }
+        'color': 'b',
+        'name': 'ua_b10_max_wds',
+        'path': 'torch/rpo_compare_k400/al_g0_s1_bn_wds_uamultiply_sigmoid_beta10.0_l1_adamw_max_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
+    },
 ]
 
 result = pd.DataFrame()
@@ -91,7 +89,8 @@ ax = plt.gca()
 k = 400
 result['x'] = list(range(k, 5 * k + 1, k))
 
-for model_info in MODEL_ARRAY:
+cmap = plt.cm.get_cmap("hsv", len(MODEL_ARRAY)+1)
+for i, model_info in enumerate(MODEL_ARRAY):
     model_results = search(model_info['path'])
     df_results = parse_result(model_results)
     result[model_info['name']] = df_results['r2']
@@ -103,4 +102,4 @@ plt.ylabel('R-squared')
 
 plt.xticks(np.arange(k, 5 * k + 1, step=k))
 
-plt.savefig('result-K400-wds-ua-add.png', dpi=300)
+plt.savefig('result-K400-wds-ua-benchmark.png', dpi=300)

@@ -50,36 +50,18 @@ MODEL_ARRAY = [
     },
     {
         'color': 'blue',
-        'name': 'max_diff',
+        'name': 'max',
         'path': 'torch/rpo_compare_k400/al_bn_l1_adamw_max_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
     },
     {
         'color': 'green',
-        'name': 'min_diff',
-        'path': 'torch/rpo_compare_k400/al_bn_l1_adamw_min_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
+        'name': 'max_random0.5',
+        'path': 'torch/rpo_compare_k400/al_g1_s1_bn_l1_adamw_max_random_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
     },
     {
         'color': 'red',
-        'name': 'wds_max',
-        'path': 'torch/rpo_compare_k400/al_bn_wds_l1_adamw_max_diff0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
-    }
-,
-    {
-        'color': 'pink',
-        'name': 'ua_b1',
-        'path': 'torch/rpo_compare_k400/al_g1_s0_bn_ua_sigmoid_beta1.0_l1_adamw_random0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
-    }
-,
-    {
-        'color': 'orange',
-        'name': 'ua_b10',
-        'path': 'torch/rpo_compare_k400/al_g0_s0_bn_ua_sigmoid_beta10.0_l1_adamw_random0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
-    }
-,
-    {
-        'color': 'gray',
-        'name': 'ua_add_b10',
-        'path': 'torch/rpo_compare_k400/al_g1_s0_bn_uaadd_sigmoid_beta10.0_l1_adamw_random0.5_wd0.04_b32_e100_lr0.001_it5_K400/txt'
+        'name': 'max_random0.1',
+        'path': 'torch/rpo_compare_k400/al_g1_s1_bn_l1_adamw_max_random_diff0.1_wd0.04_b32_e100_lr0.001_it5_K400/txt'
     }
 ]
 
@@ -103,4 +85,4 @@ plt.ylabel('R-squared')
 
 plt.xticks(np.arange(k, 5 * k + 1, step=k))
 
-plt.savefig('result-K400-wds-ua-add.png', dpi=300)
+plt.savefig('result-K400-max-ran-diff.png', dpi=300)
