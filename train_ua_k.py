@@ -563,9 +563,11 @@ if __name__ == '__main__':
             print(f'weight decay : {weight_decay}, iter_i:{iter_i}')
 
             if args.optimizer == 'adam':
-                optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=args.weight_decay)
+                optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+            elif args.optimizer == 'adamw':
+                optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
             else:
-                optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=args.weight_decay)
+                optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
             # Lr scheduler
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
