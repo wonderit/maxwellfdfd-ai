@@ -155,7 +155,7 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="rmse")
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
-    parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
+    parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=32)
 
     # arg for testing parameters
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
@@ -168,7 +168,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--num_models", help="Set number of models for active regressors", type=int, default=3)
     parser.add_argument("-a", "--is_active_learning", help="Set is AL", action='store_true')
     parser.add_argument("-ar", "--is_active_random", help="Set is AL random set", action='store_true')
-    parser.add_argument("-k", "--sample_number", help="Set K", type=int, default=200)
+    parser.add_argument("-k", "--sample_number", help="Set K", type=int, default=500)
     parser.add_argument("-ll", "--loss_lambda", help="set loss lambda", type=float, default=0.5)
     parser.add_argument("-rtl", "--rpo_type_lambda", help="max random data ratio", type=float, default=0.5)
 
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     parser.add_argument("-ut", "--uncertainty_attention_type", default='multiply')
 
     # arg for wd
-    parser.add_argument("-wd", "--weight_decay", type=float, default=0.1)
+    parser.add_argument("-wd", "--weight_decay", type=float, default=0.0)
     parser.add_argument("-wds", "--weight_decay_schedule", action='store_true')
 
     # arg for gpu
