@@ -198,6 +198,9 @@ if __name__ == '__main__':
     # arg for gpu
     parser.add_argument("-g", "--gpu", help="set gpu num", type=int, default=0)
     parser.add_argument("-sn", "--server_num", help="set server_num", type=int, default=0)
+
+    # # arg for boxplot for ua
+    # parser.add_argument("-bp", "--box_plot", action='store_true')
     args = parser.parse_args()
 
     GPU_NUM = args.gpu
@@ -477,7 +480,7 @@ if __name__ == '__main__':
     )
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
-    torch_model_folder = '{}/model'.format(log_folder)
+    torch_ua_log_folder = '{}/ua'.format(log_folder)
     torch_model_result_text_folder = '{}/txt'.format(log_folder)
 
     if not os.path.exists(log_folder):
@@ -486,8 +489,8 @@ if __name__ == '__main__':
     if not os.path.exists(torch_loss_folder):
         os.makedirs(torch_loss_folder)
 
-    if not os.path.exists(torch_model_folder):
-        os.makedirs(torch_model_folder)
+    if not os.path.exists(torch_ua_log_folder):
+        os.makedirs(torch_ua_log_folder)
 
     if not os.path.exists(torch_model_result_text_folder):
         os.makedirs(torch_model_result_text_folder)
@@ -496,6 +499,7 @@ if __name__ == '__main__':
     prev_model_path = 'prev_model_gpu{}_server{}.pth'.format(args.gpu, args.server_num)
     prev_models_path = 'prev_{}th_model_gpu{}_server{}.pth'
     prev_models = []
+    uas = []
     uncertainty_attention = None
     for iter_i in range(ITERATION):
         print('Training Iteration : {}, Labeled dataset size : {}'.format(iter_i + 1, L_x.shape[0]))
@@ -926,3 +930,12 @@ if __name__ == '__main__':
                 uncertainty_attention = np.tanh(rpo_ua_array_average)
             elif args.uncertainty_attention_activation == 'softplus':
                 uncertainty_attention = np.log1p(np.exp(rpo_ua_array_average))
+
+            # boxplot logging
+            uas.append(uncertainty_attention)
+            ua_plot_path = '{}/ua_boxplot_it{}.png'.format(torch_ua_log_folder, iter_i)
+            plt.close()
+            green_diamond = dict(markerfacecolor='r', marker='s')
+            plt.boxplot(uas, flierprops=green_diamond)
+            plt.title("box plot ua iteration")
+            plt.savefig(ua_plot_path, dpi=300)
