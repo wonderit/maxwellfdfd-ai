@@ -199,8 +199,6 @@ if __name__ == '__main__':
     parser.add_argument("-g", "--gpu", help="set gpu num", type=int, default=0)
     parser.add_argument("-sn", "--server_num", help="set server_num", type=int, default=0)
 
-    # # arg for boxplot for ua
-    # parser.add_argument("-bp", "--box_plot", action='store_true')
     args = parser.parse_args()
 
     GPU_NUM = args.gpu
