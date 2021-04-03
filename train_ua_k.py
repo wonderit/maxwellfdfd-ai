@@ -920,20 +920,23 @@ if __name__ == '__main__':
 
             if args.uncertainty_attention_activation == 'sigmoid':
                 uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * rpo_ua_array_average))
+            elif args.uncertainty_attention_activation == 'std_sigmoid':
+                std_ua = (rpo_ua_array_average - np.mean(rpo_ua_array_average)) / np.std(rpo_ua_array_average)
+                uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * std_ua))
             elif args.uncertainty_attention_activation == 'minmax':
                 minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
                         np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
                 )
                 uncertainty_attention = minmax_ua
-            elif args.uncertainty_attention_activation == 'tanh':
-                uncertainty_attention = np.tanh(rpo_ua_array_average)
-            elif args.uncertainty_attention_activation == 'softplus':
-                uncertainty_attention = np.log1p(np.exp(rpo_ua_array_average))
             elif args.uncertainty_attention_activation == 'minmax_tanh':
                 minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
                         np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
                 )
                 uncertainty_attention = np.tanh(minmax_ua)
+            elif args.uncertainty_attention_activation == 'tanh':
+                uncertainty_attention = np.tanh(rpo_ua_array_average)
+            elif args.uncertainty_attention_activation == 'softplus':
+                uncertainty_attention = np.log1p(np.exp(rpo_ua_array_average))
 
             # boxplot logging
             uas.append(rpo_ua_array_average)
