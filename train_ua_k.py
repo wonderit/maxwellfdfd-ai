@@ -929,6 +929,11 @@ if __name__ == '__main__':
                 uncertainty_attention = np.tanh(rpo_ua_array_average)
             elif args.uncertainty_attention_activation == 'softplus':
                 uncertainty_attention = np.log1p(np.exp(rpo_ua_array_average))
+            elif args.uncertainty_attention_activation == 'minmax_tanh':
+                minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
+                        np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
+                )
+                uncertainty_attention = np.tanh(minmax_ua)
 
             # boxplot logging
             uas.append(rpo_ua_array_average)
