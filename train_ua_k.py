@@ -918,7 +918,9 @@ if __name__ == '__main__':
             if args.uncertainty_attention_activation == 'sigmoid':
                 uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * rpo_ua_array_average))
             elif args.uncertainty_attention_activation == 'minmax':
-
-                minmax_ua = ( rpo_ua_array_average - np.min(rpo_ua_array_average) ) / (np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average))
-
+                minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
+                        np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
+                )
                 uncertainty_attention = minmax_ua
+            elif args.uncertainty_attention_activation == 'tanh':
+                uncertainty_attention = np.tanh(rpo_ua_array_average)
