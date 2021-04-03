@@ -498,6 +498,7 @@ if __name__ == '__main__':
     prev_models_path = 'prev_{}th_model_gpu{}_server{}.pth'
     prev_models = []
     uas = []
+    uas_uaa = []
     uncertainty_attention = None
     for iter_i in range(ITERATION):
         print('Training Iteration : {}, Labeled dataset size : {}'.format(iter_i + 1, L_x.shape[0]))
@@ -930,10 +931,18 @@ if __name__ == '__main__':
                 uncertainty_attention = np.log1p(np.exp(rpo_ua_array_average))
 
             # boxplot logging
-            uas.append(uncertainty_attention)
-            ua_plot_path = '{}/ua_boxplot_it{}.png'.format(torch_ua_log_folder, iter_i)
-            plt.close()
+            uas.append(rpo_ua_array_average)
+            uas_uaa.append(uncertainty_attention)
+            ua_prev_plot_path = '{}/ua_boxplot_it{}.png'.format(torch_ua_log_folder, iter_i)
+            ua_after_activation_plot_path = '{}/ua_{}_boxplot_it{}.png'.format(torch_ua_log_folder, args.uncertainty_attention_activation, iter_i)
+
             green_diamond = dict(markerfacecolor='r', marker='s')
+            plt.close()
             plt.boxplot(uas, flierprops=green_diamond)
-            plt.title("box plot ua iteration")
-            plt.savefig(ua_plot_path, dpi=300)
+            plt.title("box plot ua")
+            plt.savefig(ua_prev_plot_path, dpi=300)
+
+            plt.close()
+            plt.boxplot(uas_uaa, flierprops=green_diamond)
+            plt.title("box plot ua activation: {}".format(args.uncertainty_attention_activation))
+            plt.savefig(ua_after_activation_plot_path, dpi=300)
