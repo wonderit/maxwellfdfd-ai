@@ -622,8 +622,10 @@ if __name__ == '__main__':
                                 loss = (torch.abs(outputs - labels) * batch_ua_torch).sum() / outputs.data.nelement()
                             elif args.uncertainty_attention_type == 'residual':
                                 loss = (torch.abs(outputs - labels) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
-                            else:
+                            elif args.uncertainty_attention_type == 'add':
                                 loss = (torch.abs(outputs - labels) + batch_ua_torch).sum() / outputs.data.nelement()
+                            else:
+                                loss = F.l1_loss(outputs, labels)
                         else:
                             loss = F.l1_loss(outputs, labels)
                     else:
@@ -636,7 +638,7 @@ if __name__ == '__main__':
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= args.z_score
 
                         if args.uncertainty_attention and uncertainty_attention is not None:
-                            if args.uncertainty_attention_type == 'residual':
+                            if args.uncertainty_attention_type.find('residual') > -1:
                                 loss = loss + (args.loss_lambda * (
                                             z_flag_1 * torch.sqrt(torch.abs(outputs - outputs_prev) + 1e-7)
                                             + z_flag_0 * (outputs - labels) ** 2) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
@@ -661,7 +663,7 @@ if __name__ == '__main__':
                                 loss = loss + (args.loss_lambda * (outputs - labels) ** 2).sum() / outputs.data.nelement()
                         else:
                             if args.uncertainty_attention and uncertainty_attention is not None:
-                                if args.uncertainty_attention_type == 'residual':
+                                if args.uncertainty_attention_type.find('residual') > -1:
                                     loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2 * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
                                 else:
                                     loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
