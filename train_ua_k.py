@@ -933,6 +933,9 @@ if __name__ == '__main__':
                         np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
                 )
                 uncertainty_attention = np.tanh(minmax_ua)
+            elif args.uncertainty_attention_activation == 'std_tanh':
+                std_ua = (rpo_ua_array_average - np.mean(rpo_ua_array_average)) / np.std(rpo_ua_array_average)
+                uncertainty_attention = np.tanh(std_ua)
             elif args.uncertainty_attention_activation == 'tanh':
                 uncertainty_attention = np.tanh(rpo_ua_array_average)
             elif args.uncertainty_attention_activation == 'softplus':
