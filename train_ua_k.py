@@ -623,7 +623,7 @@ if __name__ == '__main__':
                             elif args.uncertainty_attention_type == 'residual':
                                 loss = (torch.abs(outputs - labels) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
                             elif args.uncertainty_attention_type == 'add':
-                                loss = (torch.abs(outputs - labels) + batch_ua_torch).sum() / outputs.data.nelement()
+                                loss = (torch.abs(outputs - labels) + args.loss_lambda * batch_ua_torch).sum() / outputs.data.nelement()
                             else:
                                 loss = F.l1_loss(outputs, labels)
                         else:
