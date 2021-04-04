@@ -636,9 +636,14 @@ if __name__ == '__main__':
                         z_flag_0 = ((mse_output_prev - mse_output_prev.mean()) / mse_output_prev.std()) <= args.z_score
 
                         if args.uncertainty_attention and uncertainty_attention is not None:
-                            loss = loss + (args.loss_lambda * (
+                            if args.uncertainty_attention_type == 'residual':
+                                loss = loss + (args.loss_lambda * (
+                                            z_flag_1 * torch.sqrt(torch.abs(outputs - outputs_prev) + 1e-7)
+                                            + z_flag_0 * (outputs - labels) ** 2) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
+                            else:
+                                loss = loss + (args.loss_lambda * (
                                         z_flag_1 * torch.sqrt(torch.abs(outputs - outputs_prev) + 1e-7)
-                                        + z_flag_0 * (outputs - labels) ** 2) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
+                                        + z_flag_0 * (outputs - labels) ** 2)).sum() / outputs.data.nelement()
                         else:
                             loss = loss + (args.loss_lambda * (
                                         z_flag_1 * torch.sqrt(torch.abs(outputs - outputs_prev) + 1e-7)
@@ -656,7 +661,10 @@ if __name__ == '__main__':
                                 loss = loss + (args.loss_lambda * (outputs - labels) ** 2).sum() / outputs.data.nelement()
                         else:
                             if args.uncertainty_attention and uncertainty_attention is not None:
-                                loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2 * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
+                                if args.uncertainty_attention_type == 'residual':
+                                    loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2 * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
+                                else:
+                                    loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
                             else:
                                 loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
 
@@ -940,6 +948,8 @@ if __name__ == '__main__':
                 uncertainty_attention = np.tanh(rpo_ua_array_average)
             elif args.uncertainty_attention_activation == 'softplus':
                 uncertainty_attention = np.log1p(np.exp(rpo_ua_array_average))
+            else:
+                uncertainty_attention = rpo_ua_array_average
 
             # boxplot logging
             uas.append(rpo_ua_array_average)
