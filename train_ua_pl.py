@@ -222,6 +222,9 @@ if __name__ == '__main__':
     # batch_size = 128
     # learning_rate = 0.001
 
+    if args.rpo_type == 'pl':
+        args.num_models = 2
+
     batch_size = int(args.batch_size)
     num_epochs = int(args.max_epoch)
     loss_functions = args.loss_function
@@ -247,8 +250,6 @@ if __name__ == '__main__':
         args.uncertainty_attention = True
         args.loss_function = 'l1'
 
-    if args.rpo_type == 'pl':
-        args.num_models = 2
 
     x_train = []
     y_train = []
