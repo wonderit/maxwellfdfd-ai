@@ -378,7 +378,7 @@ if __name__ == '__main__':
         U_y = y_train[U_indices]
         # ITERATION = ITERATION + 1
 
-        if args.pseudo_label:
+        if args.pseudo_label or args.rpo_type == 'pl':
             PL_x = L_x
             PL_y = L_y
 
@@ -839,7 +839,7 @@ if __name__ == '__main__':
             rpo_array_sum = np.sum(rpo_array, axis=1)
 
             if args.rpo_type == 'max_diff' or args.rpo_type == 'mid_diff' or args.rpo_type == 'max_random_diff' \
-                    or args.rpo_type == 'max_stdev':
+                    or args.rpo_type == 'max_stdev' or args.rpo_type == 'pl':
                 rpo_array_arg_sort = np.argsort(rpo_array_sum)
             elif args.rpo_type == 'random':
                 rpo_array_arg_sort = np.random.permutation(len(rpo_array_sum))
