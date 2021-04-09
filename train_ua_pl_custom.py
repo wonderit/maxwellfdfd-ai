@@ -548,7 +548,7 @@ if __name__ == '__main__':
         for m in range(num_models):
             print(f'Training models ({m+1}/{num_models}), Labeled data size: {len(L_x)}')
             if iter_i > 0 and args.pseudo_label:
-                PL_length = pseudolabel_size[m] - len(L_x)
+                PL_length = pseudolabel_size[m]
 
                 if PL_length > 0:
                     PL_x = PL_x[:PL_length]
@@ -556,7 +556,7 @@ if __name__ == '__main__':
                     # pl_indices = np.random.permutation(PL_length)
                     # PL_x = PL_x[pl_indices]
                     # PL_y = PL_y[pl_indices]
-                elif pseudolabel_size[m] == 0:
+                elif PL_length == 0:
                     PL_x = L_x
                     PL_y = L_y
                 # shuffle Pseudo Labeled data
