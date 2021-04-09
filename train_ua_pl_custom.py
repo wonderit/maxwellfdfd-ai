@@ -549,6 +549,7 @@ if __name__ == '__main__':
             print(f'Training models ({m+1}/{num_models}), Labeled data size: {len(L_x)}')
             if iter_i > 0 and args.pseudo_label:
                 PL_length = pseudolabel_size[m]
+                print(f'PL_length: {PL_length}, pl_x:{len(PL_x)}')
 
                 if PL_length > 0:
                     PL_x = PL_x[:PL_length]
@@ -569,7 +570,7 @@ if __name__ == '__main__':
                                                            batch_size=batch_size,
                                                            shuffle=False)
                 total_step = len(train_loader)
-                print(f'Training models ({m+1}/{num_models}), Labeled data size: {len(PL_x)}')
+                print(f'Training models ({m+1}/{num_models}), Pseudo-Labeled data size: {len(PL_x)}')
 
             # add uncertainty attention
             if args.uncertainty_attention:
