@@ -180,7 +180,7 @@ if __name__ == '__main__':
     parser.add_argument("-tbra", "--tbr_addition", action='store_true')
     parser.add_argument("-z", "--z_score", type=float, default=2.0)
     parser.add_argument("-pl", "--pseudo_label", action='store_true')
-    parser.add_argument("-pls", "--pseudo_label_size", default='0,27000')
+    parser.add_argument("-pls", "--pseudo_label_size", default='0,2')
     # arg for rpo type
     parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff, random, pl)", default='pl')
 
@@ -551,8 +551,13 @@ if __name__ == '__main__':
                 PL_length = pseudolabel_size[m]
 
                 if PL_length > 0:
-                    PL_sub_x = PL_x[:PL_length]
-                    PL_sub_y = PL_y[:PL_length]
+                    if PL_length > 10:
+                        PL_sub_x = PL_x[:PL_length]
+                        PL_sub_y = PL_y[:PL_length]
+                    else:
+                        PL_length_multiplied = PL_length * len(L_x)
+                        PL_sub_x = PL_x[:PL_length_multiplied]
+                        PL_sub_y = PL_y[:PL_length_multiplied]
                 elif PL_length == 0:
                     PL_sub_x = L_x
                     PL_sub_y = L_y
