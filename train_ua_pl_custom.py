@@ -883,12 +883,14 @@ if __name__ == '__main__':
             if args.pseudo_label:
                 X_pr_avg = np.average(X_pr, axis=0)
                 X_pr_avg_U = X_pr_avg[U_indices]
-                if args.pseudo_label_size[m] > 0:
-                    random_pseudo_label_indices = np.random.permutation(args.pseudo_label_size[m])
-                    X_pr_avg_U = X_pr_avg_U[random_pseudo_label_indices]
-                    U_x_pl = U_x[random_pseudo_label_indices]
+                PL_length = args.pseudo_label_size[m] - len(L_x)
+
+                if PL_length > 0:
+                    pl_indices = np.random.permutation(PL_length)
+                    X_pr_avg_U_pl = X_pr_avg_U[pl_indices]
+                    U_x_pl = U_x[pl_indices]
                     PL_x = np.append(L_x, U_x_pl, axis=0)
-                    PL_y = np.append(L_y, X_pr_avg_U, axis=0)
+                    PL_y = np.append(L_y, X_pr_avg_U_pl, axis=0)
                 elif args.pseudo_label_size[m] < 0:
                     PL_x = np.append(L_x, U_x, axis=0)
                     PL_y = np.append(L_y, X_pr_avg_U, axis=0)
