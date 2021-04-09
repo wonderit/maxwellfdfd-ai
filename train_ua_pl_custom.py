@@ -534,12 +534,12 @@ if __name__ == '__main__':
                                                   batch_size=batch_size,
                                                   shuffle=False)
 
-        if iter_i > 0 and args.pseudo_label:
-            train_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
-
-            train_loader = torch.utils.data.DataLoader(dataset=train_set,
-                                                       batch_size=batch_size,
-                                                       shuffle=False)
+        # if iter_i > 0 and args.pseudo_label:
+        #     train_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
+        #
+        #     train_loader = torch.utils.data.DataLoader(dataset=train_set,
+        #                                                batch_size=batch_size,
+        #                                                shuffle=False)
 
         # Train model
         total_step = len(train_loader)
@@ -547,12 +547,12 @@ if __name__ == '__main__':
         # active regressor
         for m in range(num_models):
             print('Training models ({}/{}), Labeled data size: {}'.format(m + 1, num_models, (iter_i+1) * args.sample_number))
-            if m > 0 and args.rpo_type == 'pl':
+            if iter_i > 0 and args.pseudo_label:
                 train_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
                 train_loader = torch.utils.data.DataLoader(dataset=train_set,
                                                            batch_size=batch_size,
                                                            shuffle=False)
-                print('training rpo pl')
+                print('training pl')
 
             # train, val loss
             val_loss_array = []
