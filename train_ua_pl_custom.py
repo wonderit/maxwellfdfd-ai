@@ -549,28 +549,24 @@ if __name__ == '__main__':
             print(f'Training models ({m+1}/{num_models}), Labeled data size: {len(L_x)}')
             if iter_i > 0 and args.pseudo_label:
                 PL_length = pseudolabel_size[m]
-                print(f'PL_length: {PL_length}, pl_x:{len(PL_x)}')
 
                 if PL_length > 0:
-                    PL_x = PL_x[:PL_length]
-                    PL_y = PL_y[:PL_length]
-                    # pl_indices = np.random.permutation(PL_length)
-                    # PL_x = PL_x[pl_indices]
-                    # PL_y = PL_y[pl_indices]
+                    PL_sub_x = PL_x[:PL_length]
+                    PL_sub_y = PL_y[:PL_length]
                 elif PL_length == 0:
-                    PL_x = L_x
-                    PL_y = L_y
+                    PL_sub_x = L_x
+                    PL_sub_y = L_y
                 # shuffle Pseudo Labeled data
-                shuffle_index = np.random.permutation(len(PL_x))
-                PL_x = PL_x[shuffle_index]
-                PL_y = PL_y[shuffle_index]
+                shuffle_index = np.random.permutation(len(PL_sub_x))
+                PL_sub_x = PL_sub_x[shuffle_index]
+                PL_sub_y = PL_sub_y[shuffle_index]
 
-                train_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
+                train_set = MaxwellFDFDDataset(PL_sub_x, PL_sub_y, transform=False)
                 train_loader = torch.utils.data.DataLoader(dataset=train_set,
                                                            batch_size=batch_size,
                                                            shuffle=False)
                 total_step = len(train_loader)
-                print(f'Training models ({m+1}/{num_models}), Pseudo-Labeled data size: {len(PL_x)}')
+                print(f'Training models ({m+1}/{num_models}), Pseudo-Labeled data size: {len(PL_sub_x)}')
 
             # add uncertainty attention
             if args.uncertainty_attention:
@@ -581,7 +577,7 @@ if __name__ == '__main__':
                     prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu, args.server_num)))
                     prev_model.eval()
                     if args.pseudo_label:
-                        ua_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
+                        ua_set = MaxwellFDFDDataset(PL_sub_x, PL_sub_y, transform=False)
                     else:
                         ua_set = MaxwellFDFDDataset(L_x, L_y, transform=False)
                     # Data loader
@@ -971,11 +967,6 @@ if __name__ == '__main__':
                 X_pr_avg_U = X_pr_avg[U_indices]
                 PL_x = np.append(L_x, U_x, axis=0)
                 PL_y = np.append(L_y, X_pr_avg_U, axis=0)
-                # no shuffle for pl index
-                # # shuffle Pseudo Labeled data
-                # shuffle_index = np.random.permutation(len(PL_x))
-                # PL_x = PL_x[shuffle_index]
-                # PL_y = PL_y[shuffle_index]
 
         # shuffle Labeled data
         shuffle_index = np.random.permutation(len(L_x))
