@@ -581,7 +581,7 @@ if __name__ == '__main__':
                     prev_model = ConvNet(num_classes).to(device)
                     prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu, args.server_num)))
                     prev_model.eval()
-                    if args.pseudo_label:
+                    if iter_i > 0 and args.pseudo_label:
                         ua_set = MaxwellFDFDDataset(PL_sub_x, PL_sub_y, transform=False)
                     else:
                         ua_set = MaxwellFDFDDataset(L_x, L_y, transform=False)
