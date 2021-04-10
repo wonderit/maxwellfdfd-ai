@@ -203,11 +203,11 @@ if __name__ == '__main__':
 
     GPU_NUM = args.gpu
     device = torch.device(f'cuda:{GPU_NUM}' if torch.cuda.is_available() else 'cpu')
-    torch.cuda.set_device(device)  # change allocation of current GPU
-    print('Current cuda device ', torch.cuda.current_device())  # check
 
     # Additional Infos
     if device.type == 'cuda':
+        torch.cuda.set_device(device)  # change allocation of current GPU
+        print('Current cuda device ', torch.cuda.current_device())  # check
         print(torch.cuda.get_device_name(GPU_NUM))
         print('Memory Usage:')
         print('Allocated:', round(torch.cuda.memory_allocated(GPU_NUM) / 1024 ** 3, 1), 'GB')
@@ -695,8 +695,7 @@ if __name__ == '__main__':
                     count += 1
 
                     if (i + 1) % 10 == 0:
-                        print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
-                              .format(epoch + 1, num_epochs, i + 1, total_step, loss.item()))
+                        print(f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{total_step}], Loss: {loss.item():.4f}')
 
                 train_loss_array.append(train_loss / count)
 
@@ -730,7 +729,7 @@ if __name__ == '__main__':
                     r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
                     val_loss_array.append(val_loss)
 
-                    print('Validation Accuracy of the model on the {} validation images, loss: {:.4f}, R^2 : {:.4f} '.format(total, val_loss, r2))
+                    print(f'Validation Accuracy of the model on the {total} validation images, loss: {val_loss:.4f}, R^2 : {r2:.4f} ')
 
                     early_stopping(val_loss, model)
 
@@ -764,13 +763,13 @@ if __name__ == '__main__':
 
                 pred_array = pred_array.reshape(-1)
                 labels_array = labels_array.reshape(-1)
-                print('labels array shape: {}, pred array shape: {}'.format(labels_array.shape, pred_array.shape))
+                print(f'labels array shape: {labels_array.shape}, pred array shape: {pred_array.shape}')
                 test_rmse = np.sqrt(mean_squared_error(labels_array, pred_array))
                 # test_rmse = torch.sqrt(mse_loss(outputs, labels))
                 test_r2 = r2_score(y_true=labels_array, y_pred=pred_array, multioutput='uniform_average')
-                print('Test Accuracy of the model on the {} test images, loss: {:.4f}, R^2 : {:.4f} '.format(total, test_rmse, test_r2))
+                print(f'Test Accuracy of the model on the {total} test images, loss: {test_rmse:.4f}, R^2 : {test_r2:.4f} ')
                 scatter_plot(y_true=labels_array, y_pred=pred_array,
-                             message='RMSE: {:.4f}, R^2: {:4f}'.format(test_rmse, test_r2),
+                             message=f'RMSE: {test_rmse:.4f}, R^2: {test_r2:4f}',
                              result_path=log_folder,
                              iter_number=iter_i,
                              model_number=m)
@@ -781,19 +780,19 @@ if __name__ == '__main__':
             # torch.save(model.state_dict(), model_file_name)
 
             # Save the model result text
-            model_file_result = '{}/model_it{}_m{}_{:.4f}_{:.4f}_ep{}_lr{}.txt'.format(torch_model_result_text_folder, iter_i, m,
-                                                                                      test_rmse, test_r2, early_stopped_epoch, learning_rate)
+            model_file_result = f'{torch_model_result_text_folder}/model_it{iter_i}_m{m}_{test_rmse:.4f}_{test_r2:.4f}_ep{early_stopped_epoch}_lr{learning_rate}.txt'
+
             with open(model_file_result, "w") as f:
                 f.write(f'{model_file_result}')
 
             # remove m == 0
             if args.remember_model:
-                print('ITERATION : {}, prev model updated'.format(iter_i))
+                print(f'ITERATION : {iter_i}, prev model updated')
                 torch.save(model.state_dict(), prev_model_path)
                 # prev_model = model
 
             if args.uncertainty_attention:
-                print('ITERATION : {}, prev {}th model updated'.format(iter_i, m))
+                print(f'ITERATION : {iter_i}, prev {m}th model updated')
                 torch.save(model.state_dict(), prev_models_path.format(m, args.gpu, args.server_num))
 
             # Save learning curve
@@ -804,10 +803,7 @@ if __name__ == '__main__':
             plt.ylabel('Loss')
             plt.title('Model - Loss')
             plt.legend(['Training', 'Validation'], loc='upper right')
-            log_curve_file_name = '{}/log-curve-it{}-m{}-{:.4f}-{:.4f}-ep{}-lr{}.png'.format(torch_loss_folder,
-                                                                                             iter_i, m,
-                                                                                             test_rmse, test_r2, early_stopped_epoch,
-                                                                                     learning_rate)
+            log_curve_file_name = f'{torch_loss_folder}/log-curve-it{iter_i}-m{m}-{test_rmse:.4f}-{test_r2:.4f}-ep{early_stopped_epoch}-lr{learning_rate}.png'
             plt.savefig(log_curve_file_name)
 
             # AL start
