@@ -189,7 +189,7 @@ if __name__ == '__main__':
     parser.add_argument("-sb", "--sigmoid_beta", help="beta of sigmoid", type=float, default=1.0)
     parser.add_argument("-uaa", "--uncertainty_attention_activation", help="flag for uncertainty attention of gradients",
                         default='sigmoid')
-    parser.add_argument("-ut", "--uncertainty_attention_type", default='multiply')
+    parser.add_argument("-ut", "--uncertainty_attention_type", default='residual')
 
     # arg for wd
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.0)
