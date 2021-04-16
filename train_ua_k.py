@@ -190,6 +190,7 @@ if __name__ == '__main__':
     parser.add_argument("-uaa", "--uncertainty_attention_activation", help="flag for uncertainty attention of gradients",
                         default='sigmoid')
     parser.add_argument("-ut", "--uncertainty_attention_type", default='residual')
+    parser.add_argument("-uag", "--uncertainty_attention_grad", action='store_true')
 
     # arg for wd
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.0)
@@ -229,6 +230,9 @@ if __name__ == '__main__':
     loss_functions = args.loss_function
     learning_rate = args.learning_rate
     num_models = args.num_models
+    uncertainty_attention_grad = False
+    if args.uncertainty_attention_grad:
+        uncertainty_attention_grad = True
 
     img_rows, img_cols, channels = 100, 200, 1
 
@@ -613,7 +617,7 @@ if __name__ == '__main__':
                         else:
                             batch_ua = uncertainty_attention_resize[ua_start:]
                         batch_ua_torch = torch.from_numpy(batch_ua).to(device)
-                        batch_ua_torch.requires_grad = True
+                        batch_ua_torch.requires_grad = uncertainty_attention_grad
 
                     if args.loss_function == 'rmse':
                         loss = torch.sqrt(mse_loss(outputs, labels))
