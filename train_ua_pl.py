@@ -613,6 +613,8 @@ if __name__ == '__main__':
                     # Forward pass
                     outputs = model(images)
 
+                    print('uncertainty attention:', len(uncertainty_attention))
+
                     if args.uncertainty_attention and uncertainty_attention is not None:
                         uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
                         ua_end = batch_size * i + batch_size
