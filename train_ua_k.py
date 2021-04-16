@@ -629,19 +629,17 @@ if __name__ == '__main__':
                     elif args.loss_function == 'smoothl1':
                         loss = F.smooth_l1_loss(outputs, labels)
                     elif args.loss_function == 'l1':
-                        # loss = F.l1_loss(outputs, labels)
-                        loss = (torch.abs(outputs - labels)).sum(axis=1)
-                        # if args.uncertainty_attention and uncertainty_attention is not None:
-                        #     if args.uncertainty_attention_type == 'multiply':
-                        #         loss = (torch.abs(outputs - labels) * batch_ua_torch).sum() / outputs.data.nelement()
-                        #     elif args.uncertainty_attention_type == 'residual':
-                        #         loss = (torch.abs(outputs - labels) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
-                        #     elif args.uncertainty_attention_type == 'add':
-                        #         loss = (torch.abs(outputs - labels) + args.loss_lambda * batch_ua_torch).sum() / outputs.data.nelement()
-                        #     else:
-                        #         loss = F.l1_loss(outputs, labels)
-                        # else:
-                        #     loss = F.l1_loss(outputs, labels)
+                        if args.uncertainty_attention and uncertainty_attention is not None:
+                            if args.uncertainty_attention_type == 'multiply':
+                                loss = (torch.abs(outputs - labels) * batch_ua_torch).sum() / outputs.data.nelement()
+                            elif args.uncertainty_attention_type == 'residual':
+                                loss = (torch.abs(outputs - labels) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
+                            elif args.uncertainty_attention_type == 'add':
+                                loss = (torch.abs(outputs - labels) + args.loss_lambda * batch_ua_torch).sum() / outputs.data.nelement()
+                            else:
+                                loss = F.l1_loss(outputs, labels)
+                        else:
+                            loss = F.l1_loss(outputs, labels)
                     else:
                         loss = mse_loss(outputs, labels)
 
@@ -696,13 +694,13 @@ if __name__ == '__main__':
                     #
                     # loss = loss.sum() / outputs.data.nelement()
 
-                    if args.uncertainty_attention and uncertainty_attention is not None:
-                        batch_ua_torch.requires_grad = uncertainty_attention_grad
-                        loss = (1. + batch_ua_torch) * loss
-                        if i == 0:
-                            print(f'batch ua torch grad: {batch_ua_torch.requires_grad}')
-
-                    loss = loss.sum() / outputs.data.nelement()
+                    # if args.uncertainty_attention and uncertainty_attention is not None:
+                    #     batch_ua_torch.requires_grad = uncertainty_attention_grad
+                    #     loss = (1. + batch_ua_torch) * loss
+                    #     if i == 0:
+                    #         print(f'batch ua torch grad: {batch_ua_torch.requires_grad}')
+                    #
+                    # loss = loss.sum() / outputs.data.nelement()
 
                     loss.backward()
 
