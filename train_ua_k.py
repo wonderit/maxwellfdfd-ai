@@ -204,8 +204,6 @@ if __name__ == '__main__':
 
     GPU_NUM = args.gpu
     device = torch.device(f'cuda:{GPU_NUM}' if torch.cuda.is_available() else 'cpu')
-    torch.cuda.set_device(device)  # change allocation of current GPU
-    print('Current cuda device ', torch.cuda.current_device())  # check
 
     # Additional Infos
     if device.type == 'cuda':
@@ -252,6 +250,7 @@ if __name__ == '__main__':
         args.is_active_learning = True
         args.uncertainty_attention = True
         args.loss_function = 'l1'
+        args.sample_number = 50
 
     x_train = []
     y_train = []
@@ -607,34 +606,42 @@ if __name__ == '__main__':
 
                     # Forward pass
                     outputs = model(images)
+                    # print(f'output shape:{outputs.data.shape}')
 
                     if args.uncertainty_attention and uncertainty_attention is not None:
-                        uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
+                        # uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
+                        # uncertainty_attention_resize = np.array(1 * [uncertainty_attention]).T
+                        uncertainty_attention_resize = np.array(uncertainty_attention)
+                        # print(f'uar shape {uncertainty_attention_resize.shape}')
                         ua_end = batch_size * i + batch_size
                         ua_start = batch_size * i
                         if ua_end < len(uncertainty_attention_resize):
                             batch_ua = uncertainty_attention_resize[ua_start:ua_end]
                         else:
                             batch_ua = uncertainty_attention_resize[ua_start:]
+                        # print(f'batch_ua shape {batch_ua.shape}')
                         batch_ua_torch = torch.from_numpy(batch_ua).to(device)
                         batch_ua_torch.requires_grad = uncertainty_attention_grad
+                        # print(f'uag {batch_ua_torch.requires_grad}')
 
                     if args.loss_function == 'rmse':
                         loss = torch.sqrt(mse_loss(outputs, labels))
                     elif args.loss_function == 'smoothl1':
                         loss = F.smooth_l1_loss(outputs, labels)
                     elif args.loss_function == 'l1':
-                        if args.uncertainty_attention and uncertainty_attention is not None:
-                            if args.uncertainty_attention_type == 'multiply':
-                                loss = (torch.abs(outputs - labels) * batch_ua_torch).sum() / outputs.data.nelement()
-                            elif args.uncertainty_attention_type == 'residual':
-                                loss = (torch.abs(outputs - labels) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
-                            elif args.uncertainty_attention_type == 'add':
-                                loss = (torch.abs(outputs - labels) + args.loss_lambda * batch_ua_torch).sum() / outputs.data.nelement()
-                            else:
-                                loss = F.l1_loss(outputs, labels)
-                        else:
-                            loss = F.l1_loss(outputs, labels)
+                        # loss = F.l1_loss(outputs, labels)
+                        loss = (torch.abs(outputs - labels)).sum(axis=1)
+                        # if args.uncertainty_attention and uncertainty_attention is not None:
+                        #     if args.uncertainty_attention_type == 'multiply':
+                        #         loss = (torch.abs(outputs - labels) * batch_ua_torch).sum() / outputs.data.nelement()
+                        #     elif args.uncertainty_attention_type == 'residual':
+                        #         loss = (torch.abs(outputs - labels) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
+                        #     elif args.uncertainty_attention_type == 'add':
+                        #         loss = (torch.abs(outputs - labels) + args.loss_lambda * batch_ua_torch).sum() / outputs.data.nelement()
+                        #     else:
+                        #         loss = F.l1_loss(outputs, labels)
+                        # else:
+                        #     loss = F.l1_loss(outputs, labels)
                     else:
                         loss = mse_loss(outputs, labels)
 
@@ -689,10 +696,13 @@ if __name__ == '__main__':
                     #
                     # loss = loss.sum() / outputs.data.nelement()
 
-                    # if args.uncertainty_attention and uncertainty_attention is not None:
-                    #     print(loss.shape, uncertainty_attention.shape)
-                    #     loss = uncertainty_attention * loss
-                    #     exit()
+                    if args.uncertainty_attention and uncertainty_attention is not None:
+                        batch_ua_torch.requires_grad = uncertainty_attention_grad
+                        loss = (1. + batch_ua_torch) * loss
+                        if i == 0:
+                            print(f'batch ua torch grad: {batch_ua_torch.requires_grad}')
+
+                    loss = loss.sum() / outputs.data.nelement()
 
                     loss.backward()
 
@@ -839,6 +849,7 @@ if __name__ == '__main__':
             rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
             if args.rpo_type == 'max_stdev':
                 rpo_array = np.std(X_pr, axis=0)
+            # print(f'rpo arrah shape: {rpo_array.shape}')
             rpo_array_sum = np.sum(rpo_array, axis=1)
 
             if args.rpo_type == 'max_diff' or args.rpo_type == 'mid_diff' or args.rpo_type == 'max_random_diff' \
