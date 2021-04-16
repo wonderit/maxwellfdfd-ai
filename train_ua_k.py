@@ -613,9 +613,7 @@ if __name__ == '__main__':
                         else:
                             batch_ua = uncertainty_attention_resize[ua_start:]
                         batch_ua_torch = torch.from_numpy(batch_ua).to(device)
-                        print(f'requires grad:{batch_ua_torch.requires_grad}')
                         batch_ua_torch.requires_grad = True
-                        print(f'requires grad->:{batch_ua_torch.requires_grad}')
 
                     if args.loss_function == 'rmse':
                         loss = torch.sqrt(mse_loss(outputs, labels))
