@@ -475,6 +475,8 @@ if __name__ == '__main__':
     if args.uncertainty_attention:
         if args.uncertainty_attention_activation == 'sigmoid':
             al_type = al_type + '_ua{}_sigmoid_beta{}'.format(args.uncertainty_attention_type, args.sigmoid_beta)
+        elif args.uncertainty_attention_activation == 'identity':
+            al_type = al_type + '_ua{}_ll{}'.format(args.uncertainty_attention_type, args.loss_lambda)
         else:
             al_type = al_type + '_ua{}_{}'.format(args.uncertainty_attention_type, args.uncertainty_attention_activation)
 
@@ -631,6 +633,8 @@ if __name__ == '__main__':
                                 loss = (torch.abs(outputs - labels) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
                             elif args.uncertainty_attention_type == 'add':
                                 loss = (torch.abs(outputs - labels) + args.loss_lambda * batch_ua_torch).sum() / outputs.data.nelement()
+                            elif args.uncertainty_attention_type == 'lambda_residual':
+                                loss = (torch.abs(outputs - labels) * (1. + args.loss_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
                             else:
                                 loss = F.l1_loss(outputs, labels)
                         else:
