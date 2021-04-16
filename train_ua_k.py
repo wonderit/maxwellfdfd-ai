@@ -609,20 +609,15 @@ if __name__ == '__main__':
                     # print(f'output shape:{outputs.data.shape}')
 
                     if args.uncertainty_attention and uncertainty_attention is not None:
-                        # uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
-                        # uncertainty_attention_resize = np.array(1 * [uncertainty_attention]).T
-                        uncertainty_attention_resize = np.array(uncertainty_attention)
-                        # print(f'uar shape {uncertainty_attention_resize.shape}')
+                        uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
                         ua_end = batch_size * i + batch_size
                         ua_start = batch_size * i
                         if ua_end < len(uncertainty_attention_resize):
                             batch_ua = uncertainty_attention_resize[ua_start:ua_end]
                         else:
                             batch_ua = uncertainty_attention_resize[ua_start:]
-                        # print(f'batch_ua shape {batch_ua.shape}')
                         batch_ua_torch = torch.from_numpy(batch_ua).to(device)
                         batch_ua_torch.requires_grad = uncertainty_attention_grad
-                        # print(f'uag {batch_ua_torch.requires_grad}')
 
                     if args.loss_function == 'rmse':
                         loss = torch.sqrt(mse_loss(outputs, labels))
