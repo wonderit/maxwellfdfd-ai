@@ -190,6 +190,7 @@ if __name__ == '__main__':
     parser.add_argument("-uaa", "--uncertainty_attention_activation", help="flag for uncertainty attention of gradients",
                         default='sigmoid')
     parser.add_argument("-ut", "--uncertainty_attention_type", default='residual')
+    parser.add_argument("-ual", "--uncertainty_attention_lambda", type=float, default=1.0)
     parser.add_argument("-uag", "--uncertainty_attention_grad", action='store_true')
 
     # arg for wd
@@ -474,9 +475,11 @@ if __name__ == '__main__':
 
     if args.uncertainty_attention:
         if args.uncertainty_attention_activation == 'sigmoid':
-            al_type = al_type + '_ua{}_sigmoid_beta{}'.format(args.uncertainty_attention_type, args.sigmoid_beta)
+            al_type = al_type + f'_ua{args.uncertainty_attention_type}_sb{args.sigmoid_beta}'
+            if args.uncertainty_attention_type == 'lambda_residual':
+                al_type = al_type + f'_ual{args.uncertainty_attention_lambda}'
         elif args.uncertainty_attention_activation == 'identity':
-            al_type = al_type + '_ua{}_ll{}'.format(args.uncertainty_attention_type, args.loss_lambda)
+            al_type = al_type + f'_ua{args.uncertainty_attention_type}_ual{args.uncertainty_attention_lambda}'
         else:
             al_type = al_type + '_ua{}_{}'.format(args.uncertainty_attention_type, args.uncertainty_attention_activation)
 
@@ -632,9 +635,9 @@ if __name__ == '__main__':
                             elif args.uncertainty_attention_type == 'residual':
                                 loss = (torch.abs(outputs - labels) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
                             elif args.uncertainty_attention_type == 'add':
-                                loss = (torch.abs(outputs - labels) + args.loss_lambda * batch_ua_torch).sum() / outputs.data.nelement()
+                                loss = (torch.abs(outputs - labels) + args.uncertainty_attention_lambda * batch_ua_torch).sum() / outputs.data.nelement()
                             elif args.uncertainty_attention_type == 'lambda_residual':
-                                loss = (torch.abs(outputs - labels) * (1. + args.loss_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
+                                loss = (torch.abs(outputs - labels) * (1. + args.uncertainty_attention_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
                             else:
                                 loss = F.l1_loss(outputs, labels)
                         else:
@@ -652,7 +655,7 @@ if __name__ == '__main__':
                             if args.uncertainty_attention_type.find('residual') > -1:
                                 loss = loss + (args.loss_lambda * (
                                             z_flag_1 * torch.sqrt(torch.abs(outputs - outputs_prev) + 1e-7)
-                                            + z_flag_0 * (outputs - labels) ** 2) * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
+                                            + z_flag_0 * (outputs - labels) ** 2) * (1.+ args.uncertainty_attention_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
                             else:
                                 loss = loss + (args.loss_lambda * (
                                         z_flag_1 * torch.sqrt(torch.abs(outputs - outputs_prev) + 1e-7)
@@ -669,13 +672,13 @@ if __name__ == '__main__':
                         flag = (mse_output - mse_output_prev) > 0
                         if args.tbr_addition:
                             if args.uncertainty_attention and uncertainty_attention is not None:
-                                loss = loss + (args.loss_lambda * (outputs - labels) ** 2 * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
+                                loss = loss + (args.loss_lambda * (outputs - labels) ** 2 * (1.+args.uncertainty_attention_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
                             else:
                                 loss = loss + (args.loss_lambda * (outputs - labels) ** 2).sum() / outputs.data.nelement()
                         else:
                             if args.uncertainty_attention and uncertainty_attention is not None:
                                 if args.uncertainty_attention_type.find('residual') > -1:
-                                    loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2 * (1.+batch_ua_torch)).sum() / outputs.data.nelement()
+                                    loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2 * (1.+args.uncertainty_attention_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
                                 else:
                                     loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
                             else:
