@@ -671,21 +671,18 @@ if __name__ == '__main__':
                         mse_output = (outputs - labels) ** 2
                         flag = (mse_output - mse_output_prev) > 0
                         if args.tbr_addition:
-                            loss = loss + (args.loss_lambda * (outputs - labels) ** 2).sum() / outputs.data.nelement()
-                            # if args.uncertainty_attention and uncertainty_attention is not None:
-                            #     loss = loss + (args.loss_lambda * (outputs - labels) ** 2 * (1.+args.uncertainty_attention_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
-                            # else:
-                            #     loss = loss + (args.loss_lambda * (outputs - labels) ** 2).sum() / outputs.data.nelement()
+                            if args.uncertainty_attention and uncertainty_attention is not None:
+                                loss = loss + (args.loss_lambda * (outputs - labels) ** 2 * (1.+args.uncertainty_attention_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
+                            else:
+                                loss = loss + (args.loss_lambda * (outputs - labels) ** 2).sum() / outputs.data.nelement()
                         else:
-                            loss = loss + (args.loss_lambda * flag * (
-                                        outputs - labels) ** 2).sum() / outputs.data.nelement()
-                            # if args.uncertainty_attention and uncertainty_attention is not None:
-                            #     if args.uncertainty_attention_type.find('residual') > -1:
-                            #         loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2 * (1.+args.uncertainty_attention_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
-                            #     else:
-                            #         loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
-                            # else:
-                            #     loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
+                            if args.uncertainty_attention and uncertainty_attention is not None:
+                                if args.uncertainty_attention_type.find('residual') > -1:
+                                    loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2 * (1.+args.uncertainty_attention_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
+                                else:
+                                    loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
+                            else:
+                                loss = loss + (args.loss_lambda * flag * (outputs - labels) ** 2).sum() / outputs.data.nelement()
 
                     # if args.uncertainty_attention and uncertainty_attention is not None:
                     #     uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
