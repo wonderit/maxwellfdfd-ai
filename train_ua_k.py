@@ -638,6 +638,8 @@ if __name__ == '__main__':
                                 loss = (torch.abs(outputs - labels) + args.uncertainty_attention_lambda * batch_ua_torch).sum() / outputs.data.nelement()
                             elif args.uncertainty_attention_type == 'lambda_residual':
                                 loss = (torch.abs(outputs - labels) * (1. + args.uncertainty_attention_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
+                            elif args.uncertainty_attention_type == 'lambda_residual_minus':
+                                loss = (torch.abs(outputs - labels) * (1. + args.uncertainty_attention_lambda * (1. - batch_ua_torch))).sum() / outputs.data.nelement()
                             else:
                                 loss = F.l1_loss(outputs, labels)
                         else:
