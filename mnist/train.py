@@ -1,12 +1,3 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torchvision import transforms, datasets
-
-# test_dataset = datasets.MNIST('../data/MNIST', train = False, transform = transforms.ToTensor())
-# train_loader = torch.utils.data.DataLoader(dataset = train_dataset, batch_size = BATCH_SIZE, shuffle = True)
-
-
 #%%
 
 # Load Libraries
@@ -33,7 +24,7 @@ num_epochs = 100
 num_classes = 10
 batch_size = 32
 learning_rate = 0.01
-num_samples = 500
+num_samples = 200
 
 
 # Set deterministic random seed
@@ -53,24 +44,29 @@ print(current_path)
 
 #%%
 
+from six.moves import urllib
+opener = urllib.request.build_opener()
+opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+urllib.request.install_opener(opener)
+
 #%%
 
 train_dataset = datasets.MNIST(root=f'./data/',
                                            train=True,
                                            transform=transforms.ToTensor(),
                                            download=False)
+# random_idx = list(range(0, num_samples))
 random_idx = np.random.permutation(num_samples)
-train_dataset.targets = train_dataset.targets[random_idx]
-train_dataset.data = train_dataset.data[random_idx]
+train_subset = torch.utils.data.Subset(train_dataset, random_idx)
 
 #%%
 
-test_dataset = datasets.MNIST(root=f'./data/',
+test_dataset = datasets.MNIST(root='data/',
                                           train=False,
                                           transform=transforms.ToTensor())
 
 # Data loader
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+train_loader = torch.utils.data.DataLoader(dataset=train_subset,
                                            batch_size=batch_size,
                                            shuffle=True)
 
@@ -80,7 +76,9 @@ test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
 
 #%%
 
-def lr_decay(epoch):
+def lr_decay(step):
+    epoch = step // (num_samples // batch_size)
+    # print(f'step:{step}, epoch:{epoch}, num_samples:{num_samples}, batch size:{batch_size}')
     if epoch < 50:
         return 1.0
     else:
@@ -135,8 +133,8 @@ model = ConvNet(num_classes).to(device)
 
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda = lr_decay)
+optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=0.2)
+scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda = lr_decay, last_epoch=-1)
 # Train the model
 total_step = len(train_loader)
 for epoch in range(num_epochs):
@@ -151,9 +149,11 @@ for epoch in range(num_epochs):
         # Backward and optimize
         optimizer.zero_grad()
         loss.backward()
+
+        optimizer.step()
         scheduler.step()
 
-        if (i+1) % 100 == 0:
+        if (i+1) % 10 == 0:
             print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
                    .format(epoch+1, num_epochs, i+1, total_step, loss.item()))
 
