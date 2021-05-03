@@ -1,0 +1,674 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+import argparse
+from PIL import Image
+import os
+import pandas as pd
+from sklearn.metrics import r2_score, mean_squared_error
+from scipy.stats import entropy
+
+from torch.utils.data import Dataset
+import matplotlib.pyplot as plt
+
+from pytorchtools import EarlyStopping
+import random
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+
+# # Hyper parameters
+# num_epochs = 10
+# num_classes = 24
+# batch_size = 128
+# learning_rate = 0.001
+
+# Set deterministic random seed
+random_seed = 999
+torch.manual_seed(random_seed)
+torch.cuda.manual_seed(random_seed)
+torch.cuda.manual_seed_all(random_seed) # if use multi-GPU
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+np.random.seed(random_seed)
+random.seed(random_seed)
+
+def scatter_plot(y_true, y_pred, message, result_path, iter_number, model_number):
+    result = np.column_stack((y_true,y_pred))
+
+    if not os.path.exists('{}/{}'.format(result_path, 'csv')):
+        os.makedirs('{}/{}'.format(result_path, 'csv'))
+
+    if not os.path.exists('{}/{}'.format(result_path, 'scatter')):
+        os.makedirs('{}/{}'.format(result_path, 'scatter'))
+
+    pd.DataFrame(result).to_csv("{}/csv/{}_{}.csv".format(result_path, iter_number, model_number), index=False)
+
+    plt.clf()
+    plt.scatter(y_pred, y_true, s=3)
+    plt.suptitle(message)
+    plt.xlabel('Predictions')
+    plt.ylabel('Actual')
+    plt.savefig("{}/scatter/{}_{}.png".format(result_path, iter_number, model_number))
+
+def mse_loss(input, target):
+    return ((input - target) ** 2).sum() / input.data.nelement()
+
+def sqrt_loss(input, target):
+    return ((input-target) ** 0.5).sum() / input.data.nelement()
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="ce")
+    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
+    parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
+    parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=32)
+
+    # arg for testing parameters
+    parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
+    parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
+
+    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='sgd')
+    parser.add_argument("-bn", "--is_batch_norm", help="Set is_batch_norm", action='store_true')
+    # arg for AL
+    parser.add_argument("-it", "--iteration", help="Set iteration for AL", type=int, default=1)
+    parser.add_argument("-n", "--num_models", help="Set number of models for active regressors", type=int, default=1)
+    parser.add_argument("-a", "--is_active_learning", help="Set is AL", action='store_true')
+    parser.add_argument("-ar", "--is_active_random", help="Set is AL random set", action='store_true')
+    parser.add_argument("-k", "--sample_number", help="Set K", type=int, default=500)
+    parser.add_argument("-ll", "--loss_lambda", help="set loss lambda", type=float, default=0.5)
+    parser.add_argument("-rtl", "--rpo_type_lambda", help="max random data ratio", type=float, default=0.5)
+
+    # arg for KD
+    parser.add_argument("-rm", "--remember_model", action='store_true')
+    parser.add_argument("-w", "--weight", action='store_true')
+    parser.add_argument("-tor", "--teacher_outlier_rejection", action='store_true')
+    parser.add_argument("-tbr", "--teacher_bounded_regression", action='store_true')
+    parser.add_argument("-tbra", "--tbr_addition", action='store_true')
+    parser.add_argument("-z", "--z_score", type=float, default=2.0)
+    parser.add_argument("-pl", "--pseudo_label", action='store_true')
+    # arg for rpo type
+    parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff, random)", default='max_diff')
+
+    # arg for uncertainty attention
+    parser.add_argument("-ua", "--uncertainty_attention", help="flag for uncertainty attention of gradients", action='store_true')
+
+    parser.add_argument("-sb", "--sigmoid_beta", help="beta of sigmoid", type=float, default=1.0)
+    parser.add_argument("-uaa", "--uncertainty_attention_activation", help="flag for uncertainty attention of gradients",
+                        default='sigmoid')
+    parser.add_argument("-ut", "--uncertainty_attention_type", default='residual')
+    parser.add_argument("-ual", "--uncertainty_attention_lambda", type=float, default=1.0)
+    parser.add_argument("-uag", "--uncertainty_attention_grad", action='store_true')
+
+    # arg for wd
+    parser.add_argument("-wd", "--weight_decay", type=float, default=0.0)
+    parser.add_argument("-wds", "--weight_decay_schedule", action='store_true')
+
+    # arg for gpu
+    parser.add_argument("-g", "--gpu", help="set gpu num", type=int, default=0)
+    parser.add_argument("-sn", "--server_num", help="set server_num", type=int, default=0)
+
+    args = parser.parse_args()
+
+    GPU_NUM = args.gpu
+    device = torch.device(f'cuda:{GPU_NUM}' if torch.cuda.is_available() else 'cpu')
+
+    # Additional Infos
+    if device.type == 'cuda':
+        torch.cuda.set_device(device)  # change allocation of current GPU
+        print('Current cuda device ', torch.cuda.current_device())  # check
+        print(torch.cuda.get_device_name(GPU_NUM))
+        print('Memory Usage:')
+        print('Allocated:', round(torch.cuda.memory_allocated(GPU_NUM) / 1024 ** 3, 1), 'GB')
+        print('Cached:   ', round(torch.cuda.memory_cached(GPU_NUM) / 1024 ** 3, 1), 'GB')
+
+    # TEST
+    # args.unit_test = True
+
+    # Hyper parameters
+    # num_epochs = 10
+    num_classes = 24
+    # batch_size = 128
+    # learning_rate = 0.001
+
+    batch_size = int(args.batch_size)
+    num_epochs = int(args.max_epoch)
+    loss_functions = args.loss_function
+    learning_rate = args.learning_rate
+    num_models = args.num_models
+    uncertainty_attention_grad = False
+    if args.uncertainty_attention_grad:
+        uncertainty_attention_grad = True
+
+    img_rows, img_cols, channels = 100, 200, 1
+
+
+    def lr_decay(step):
+        epoch = step // (args.sample_number // batch_size)
+        # print(f'step:{step}, epoch:{epoch}, num_samples:{num_samples}, batch size:{batch_size}')
+        if epoch < 50:
+            return 1.0
+        else:
+            return 0.1
+
+    if args.unit_test:
+
+        args.debug = True
+        args.max_epoch = 1
+        args.iteration = 2
+        args.is_active_learning = True
+        args.uncertainty_attention = True
+        args.loss_function = 'l1'
+        args.sample_number = 50
+
+
+    print('Training model args : batch_size={}, max_epoch={}, lr={}, loss_function={}, al={}, iter={}, K={}'
+          .format(args.batch_size, args.max_epoch, args.learning_rate, args.loss_function, args.is_active_learning,
+                  args.iteration, args.sample_number))
+
+    print('Data Loading... Train dataset Start.')
+
+    # reshape dataset
+
+    train_dataset = datasets.MNIST(root=f'./data/',
+                                   train=True,
+                                   transform=transforms.ToTensor(),
+                                   download=False)
+    # random_idx = list(range(0, num_samples))
+    # random_idx = np.random.permutation(args.sample_number)
+    # train_subset = torch.utils.data.Subset(train_dataset, random_idx)
+
+    # %%
+
+    test_dataset = datasets.MNIST(root='data/',
+                                  train=False,
+                                  transform=transforms.ToTensor())
+
+    # Data loader
+    # train_loader = torch.utils.data.DataLoader(dataset=train_subset,
+    #                                            batch_size=batch_size,
+    #                                            shuffle=True)
+    #
+    # test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+    #                                           batch_size=batch_size,
+    #                                           shuffle=False)
+
+
+    # Dataset for AL Start
+    ITERATION = args.iteration
+    if args.is_active_learning:
+        # import random
+        n_row = len(train_dataset)
+        print('Labeled Dataset row : {}'.format(n_row))
+
+        shuffled_indices = np.random.permutation(n_row)
+        labeled_set_size = args.sample_number
+        # labeled_set_size = 100
+
+        if args.is_active_random:
+            labeled_set_size = labeled_set_size * args.iteration
+
+        # random_row = random.sample(list(range(n_row)), random_n_row)
+        L_indices = shuffled_indices[:labeled_set_size]
+        U_indices = shuffled_indices[labeled_set_size:]
+
+        labeled_set = torch.utils.data.Subset(train_dataset, L_indices)
+        unlabeled_set = torch.utils.data.Subset(train_dataset, U_indices)
+        # L_y = torch.utils.data.Subset(train_dataset)
+        # L_x = x_train[L_indices]
+        # L_y = y_train[L_indices]
+        #
+        # U_x = x_train[U_indices]
+        # U_y = y_train[U_indices]
+        # ITERATION = ITERATION + 1
+
+        # if args.pseudo_label:
+        #     PL_x = L_x
+        #     PL_y = L_y
+
+
+    class ConvNet(nn.Module):
+        def __init__(self, num_classes=24):
+            super(ConvNet, self).__init__()
+            self.layer1 = nn.Sequential(
+                nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=0),
+                nn.BatchNorm2d(32),
+                nn.ReLU(),
+                # nn.MaxPool2d(kernel_size=2, stride=2)
+            )
+            self.layer2 = nn.Sequential(
+                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=0),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                # nn.MaxPool2d(kernel_size=2, stride=2)
+            )
+            self.layer3 = nn.Sequential(
+                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                # nn.MaxPool2d(kernel_size=2, stride=2)
+            )
+            self.layer4 = nn.Sequential(
+                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2)
+            )
+            self.fc = nn.Linear(10 * 10 * 64, num_classes)
+
+        def forward(self, x):
+            out = self.layer1(x)
+            out = self.layer2(out)
+            out = self.layer3(out)
+            out = self.layer4(out)
+            out = out.reshape(out.size(0), -1)
+            out = self.fc(out)
+            return out
+
+    # create loss log folder
+    al_type = f'al_g{args.gpu}_s{args.server_num}'
+    if args.is_active_random:
+        al_type = al_type + '_random'
+
+    if args.pseudo_label:
+        al_type = al_type + '_pl'
+
+    if args.remember_model:
+        al_type = al_type + '_rm'
+    if args.is_batch_norm:
+        al_type = al_type + '_bn'
+    else:
+        al_type = al_type + '_nobn'
+
+    if args.weight:
+        al_type = al_type + '_weight'
+
+    if args.weight_decay_schedule:
+        al_type = al_type + '_wds'
+
+    if args.teacher_outlier_rejection:
+        al_type = al_type + '_tor_z{}_lambda{}'.format(args.z_score, args.loss_lambda)
+
+    if args.teacher_bounded_regression:
+        tbr_type = 'upper_bound'
+        if args.tbr_addition:
+            tbr_type = 'addition'
+        al_type = al_type + '_tbr_{}_lambda{}'.format(tbr_type, args.loss_lambda)
+
+    if args.uncertainty_attention:
+        if args.uncertainty_attention_activation == 'sigmoid':
+            al_type = al_type + f'_ua{args.uncertainty_attention_type}_sb{args.sigmoid_beta}'
+            if args.uncertainty_attention_type == 'lambda_residual':
+                al_type = al_type + f'_ual{args.uncertainty_attention_lambda}'
+        elif args.uncertainty_attention_activation == 'identity':
+            al_type = al_type + f'_ua{args.uncertainty_attention_type}_ual{args.uncertainty_attention_lambda}'
+        else:
+            al_type = al_type + '_ua{}_{}'.format(args.uncertainty_attention_type, args.uncertainty_attention_activation)
+
+    log_folder = 'torch/{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
+        al_type, args.loss_function, args.optimizer, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
+    )
+
+    torch_loss_folder = '{}/train_progress'.format(log_folder)
+    torch_ua_log_folder = '{}/ua'.format(log_folder)
+    torch_model_result_text_folder = '{}/txt'.format(log_folder)
+
+    if not os.path.exists(log_folder):
+        os.makedirs(log_folder)
+
+    if not os.path.exists(torch_loss_folder):
+        os.makedirs(torch_loss_folder)
+
+    if not os.path.exists(torch_ua_log_folder):
+        os.makedirs(torch_ua_log_folder)
+
+    if not os.path.exists(torch_model_result_text_folder):
+        os.makedirs(torch_model_result_text_folder)
+
+    prev_model = None
+    prev_model_path = 'prev_model_gpu{}_server{}.pth'.format(args.gpu, args.server_num)
+    prev_models_path = 'prev_{}th_model_gpu{}_server{}.pth'
+    acc = []
+    prev_models = []
+    uas = []
+    uas_uaa = []
+    uncertainty_attention = None
+    for iter_i in range(ITERATION):
+        print('Training Iteration : {}, Labeled dataset size : {}'.format(iter_i + 1, len(labeled_set)))
+        X_pr = []
+
+        if args.debug:
+            print('labeled set', len(labeled_set))
+
+        # Data loader
+        train_loader = torch.utils.data.DataLoader(dataset=labeled_set,
+                                                   batch_size=batch_size,
+                                                   shuffle=False)
+        test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                                  batch_size=batch_size,
+                                                  shuffle=False)
+
+        # Train model
+        total_step = len(train_loader)
+
+
+        # active regressor
+        for m in range(num_models):
+            print('Training models ({}/{}), Labeled data size: {}'.format(m + 1, num_models, (iter_i+1) * args.sample_number))
+            # train, val loss
+            val_loss_array = []
+            train_loss_array = []
+
+            model = ConvNet(num_classes).to(device)
+
+            # Initialize weights
+            if args.remember_model and iter_i > 0:
+                print('Get teacher model for tor loss')
+                prev_model = ConvNet(num_classes).to(device)
+                prev_model.load_state_dict(torch.load(prev_model_path))
+                prev_model.eval()
+
+                if args.weight:
+                    print('Initializing model with previous model 0')
+                    model.load_state_dict(torch.load(prev_model_path))
+                model.train()
+
+            # Loss and optimizer
+            # criterion = nn.MSELoss()
+            # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+            weight_decay = args.weight_decay
+
+            # N1 / N2 * lambda = K / 2K
+            if args.weight_decay_schedule:
+                weight_decay = weight_decay * (0.5 ** iter_i)
+
+            print(f'weight decay : {weight_decay}, iter_i:{iter_i}')
+
+            if args.optimizer == 'adam':
+                optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+            elif args.optimizer == 'adamw':
+                optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+            else:
+                optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+
+            # Lr scheduler
+            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
+            # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
+            #                                                        min_lr=learning_rate * 0.001, verbose=True)
+
+            # Early Stopping
+            early_stopping = EarlyStopping(patience=8, verbose=True)
+            early_stopped_epoch = 0
+            criterion = nn.CrossEntropyLoss()
+            for epoch in range(num_epochs):
+                model.train()
+                train_loss = 0
+                count = 0
+                for i, (images, labels) in enumerate(train_loader):
+                    images = images.to(device)
+                    labels = labels.to(device)
+
+                    # Forward pass
+                    outputs = model(images)
+
+                    if args.uncertainty_attention and uncertainty_attention is not None:
+                        uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
+                        ua_end = batch_size * i + batch_size
+                        ua_start = batch_size * i
+                        if ua_end < len(uncertainty_attention_resize):
+                            batch_ua = uncertainty_attention_resize[ua_start:ua_end]
+                        else:
+                            batch_ua = uncertainty_attention_resize[ua_start:]
+                        batch_ua_torch = torch.from_numpy(batch_ua).to(device)
+                        batch_ua_torch.requires_grad = uncertainty_attention_grad
+
+                    loss = criterion(outputs, labels)
+
+                    # Backward and optimize
+                    optimizer.zero_grad()
+                    loss.backward()
+
+                    optimizer.step()
+                    scheduler.step()
+
+                    train_loss += loss.item()
+                    count += 1
+
+                    if (i + 1) % 10 == 0:
+                        print(f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{total_step}], Loss: {loss.item():.4f}')
+
+                train_loss_array.append(train_loss / count)
+
+
+            # Test the model
+            model.eval()
+
+            with torch.no_grad():
+                correct = 0
+                total = 0
+                for images, labels in test_loader:
+                    images = images.to(device)
+                    labels = labels.to(device)
+                    outputs = model(images)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels).sum().item()
+
+                print('Test Accuracy of the model on the 10000 test images: {} %'.format(100 * correct / total))
+
+
+            # Save the model result text
+            model_file_result = f'{torch_model_result_text_folder}/model_it{iter_i}_m{m}_ep{early_stopped_epoch}_lr{learning_rate}.txt'
+
+            with open(model_file_result, "w") as f:
+                f.write(f'{model_file_result}')
+
+            # remove m == 0
+            if args.remember_model:
+                print(f'ITERATION : {iter_i}, prev model updated')
+                torch.save(model.state_dict(), prev_model_path)
+                # prev_model = model
+
+            if args.uncertainty_attention:
+                print(f'ITERATION : {iter_i}, prev {m}th model updated')
+                torch.save(model.state_dict(), prev_models_path.format(m, args.gpu, args.server_num))
+
+            # Save learning curve
+            plt.clf()
+            plt.plot(train_loss_array)
+            plt.plot(val_loss_array)
+            plt.xlabel('Epoch')
+            plt.ylabel('Loss')
+            plt.title('Model - Loss')
+            plt.legend(['Training', 'Validation'], loc='upper right')
+            log_curve_file_name = f'{torch_loss_folder}/log-curve-it{iter_i}-m{m}-ep{early_stopped_epoch}-lr{learning_rate}.png'
+            plt.savefig(log_curve_file_name)
+
+            # AL start
+            if not args.is_active_random and args.is_active_learning:
+                # Data loader
+                active_loader = torch.utils.data.DataLoader(dataset=unlabeled_set,
+                                                            batch_size=batch_size,
+                                                            shuffle=False)
+                model.eval()
+                with torch.no_grad():
+                    correct = 0
+                    total = 0
+                    x_pr_active = []
+                    for active_images, active_labels in active_loader:
+                        torch_U_x_image = active_images.to(device)
+                        # labels = active_labels.to(device)
+                        predict_from_model = model(torch_U_x_image)
+                        np_pred = predict_from_model.cpu().data.numpy()
+                        x_pr_active.extend(np_pred)
+
+                    x_pr_active = np.array(x_pr_active)
+                    X_pr.append(x_pr_active)
+                        # _, predicted = torch.max(outputs.data, 1)
+                        # total += labels.size(0)
+                        # correct += (predicted == labels).sum().item()
+
+                    # print('Test Accuracy of the model on the 10000 test images: {} %'.format(100 * correct / total))
+
+                    x_pr_active = []
+                    for (active_images, active_labels) in active_loader:
+                        torch_U_x_image = active_images.to(device)
+                        predict_from_model = model(torch_U_x_image)
+
+                        np_pred = predict_from_model.cpu().data.numpy()
+                        x_pr_active.extend(np_pred)
+                    x_pr_active = np.array(x_pr_active)
+                    X_pr.append(x_pr_active)
+
+        if not args.is_active_random:
+            X_pr = np.array(X_pr)
+
+            # Ascending order Sorted
+
+            rpo_array = entropy(X_pr)
+            print(rpo_ua_array)
+            rpo_array_arg_sort = np.argsort(rpo_array)
+            print(rpo_array_arg_sort)
+            exit()
+            #
+            # # rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
+            # if args.rpo_type == 'max_stdev':
+            #     rpo_array = np.std(X_pr, axis=0)
+            # # print(f'rpo arrah shape: {rpo_array.shape}')
+            # rpo_array_sum = np.sum(rpo_array, axis=1)
+            #
+            # if args.rpo_type == 'max_diff' or args.rpo_type == 'mid_diff' or args.rpo_type == 'max_random_diff' \
+            #         or args.rpo_type == 'max_stdev':
+            #     rpo_array_arg_sort = np.argsort(rpo_array_sum)
+            # elif args.rpo_type == 'random':
+            #     rpo_array_arg_sort = np.random.permutation(len(rpo_array_sum))
+            # else:
+            #     rpo_array_arg_sort = np.argsort(-rpo_array_sum)
+
+            # add labeled to L_iter
+            T_indices = args.sample_number
+            U_length = len(rpo_array_arg_sort) - T_indices
+            if args.rpo_type == 'mid_diff':
+                start_idx = int(U_length / 2)
+                U_indices = rpo_array_arg_sort[:start_idx]
+                U_indices = np.append(U_indices, rpo_array_arg_sort[start_idx+T_indices:], axis=0)
+
+                L_indices = rpo_array_arg_sort[start_idx:start_idx+T_indices]
+            elif args.rpo_type == 'max_random_diff':
+                max_length = int(T_indices * args.rpo_type_lambda)
+                U_length = len(rpo_array_arg_sort) - max_length
+                U_indices = rpo_array_arg_sort[:U_length]
+                L_indices = rpo_array_arg_sort[U_length:]
+
+                # start random sampling for T/2
+                random_u_indices = np.random.permutation(len(U_indices))
+                random_length = int(T_indices * (1 - args.rpo_type_lambda))
+                U_length = len(random_u_indices) - random_length
+                U_indices = random_u_indices[:U_length]
+                L_indices = np.append(L_indices, random_u_indices[U_length:], axis=0)
+            else:
+                U_indices = rpo_array_arg_sort[:U_length]
+                L_indices = rpo_array_arg_sort[U_length:]
+
+            L_x = np.append(L_x, U_x[L_indices], axis=0)
+            L_y = np.append(L_y, U_y[L_indices], axis=0)
+
+            U_x = U_x[U_indices]
+            U_y = U_y[U_indices]
+
+            # if pseudo label
+            if args.pseudo_label:
+                X_pr_avg = np.average(X_pr, axis=0)
+                X_pr_avg_U = X_pr_avg[U_indices]
+                PL_x = np.append(L_x, U_x, axis=0)
+                PL_y = np.append(L_y, X_pr_avg_U, axis = 0)
+                # shuffle Pseudo Labeled data
+                shuffle_index = np.random.permutation(len(PL_x))
+                PL_x = PL_x[shuffle_index]
+                PL_y = PL_y[shuffle_index]
+
+        # shuffle Labeled data
+        shuffle_index = np.random.permutation(len(L_x))
+        L_x = L_x[shuffle_index]
+        L_y = L_y[shuffle_index]
+
+        # add uncertainty attention
+        if args.uncertainty_attention:
+            print('load model and calculate uncertainty for attention model')
+            X_pr_L = []
+            for ua_i in range(num_models):
+                prev_model = ConvNet(num_classes).to(device)
+                prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu, args.server_num)))
+                prev_model.eval()
+                if args.pseudo_label:
+                    ua_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
+                else:
+                    ua_set = MaxwellFDFDDataset(L_x, L_y, transform=False)
+                # Data loader
+                ua_loader = torch.utils.data.DataLoader(dataset=ua_set,
+                                                            batch_size=batch_size,
+                                                            shuffle=False)
+                prev_model.eval()
+                with torch.no_grad():
+                    X_pr_L_ua = []
+                    for (active_images, active_labels) in ua_loader:
+                        torch_L_x_image = active_images.to(device)
+                        predict_from_model = prev_model(torch_L_x_image)
+
+                        np_pred = predict_from_model.cpu().data.numpy()
+                        X_pr_L_ua.extend(np_pred)
+                    X_pr_L_ua = np.array(X_pr_L_ua)
+                    X_pr_L.append(X_pr_L_ua)
+            X_pr_L = np.array(X_pr_L)
+
+            # Ascending order Sorted
+            rpo_ua_array = entropy(X_pr_L)
+            print(rpo_ua_array)
+            exit()
+            rpo_ua_array = np.max(X_pr_L, axis=0) - np.min(X_pr_L, axis=0)
+            if args.rpo_type == 'max_stdev':
+                rpo_ua_array = np.std(X_pr_L, axis=0)
+            rpo_ua_array_average = np.average(rpo_ua_array, axis=1)
+
+            if args.uncertainty_attention_activation == 'sigmoid':
+                uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * rpo_ua_array_average))
+            elif args.uncertainty_attention_activation == 'std_sigmoid':
+                std_ua = (rpo_ua_array_average - np.mean(rpo_ua_array_average)) / np.std(rpo_ua_array_average)
+                uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * std_ua))
+            elif args.uncertainty_attention_activation == 'minmax':
+                minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
+                        np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
+                )
+                uncertainty_attention = minmax_ua
+            elif args.uncertainty_attention_activation == 'minmax_tanh':
+                minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
+                        np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
+                )
+                uncertainty_attention = np.tanh(minmax_ua)
+            elif args.uncertainty_attention_activation == 'std_tanh':
+                std_ua = (rpo_ua_array_average - np.mean(rpo_ua_array_average)) / np.std(rpo_ua_array_average)
+                uncertainty_attention = np.tanh(std_ua)
+            elif args.uncertainty_attention_activation == 'tanh':
+                uncertainty_attention = np.tanh(rpo_ua_array_average)
+            elif args.uncertainty_attention_activation == 'softplus':
+                uncertainty_attention = np.log1p(np.exp(rpo_ua_array_average))
+            else:
+                uncertainty_attention = rpo_ua_array_average
+
+            # boxplot logging
+            uas.append(rpo_ua_array_average)
+            uas_uaa.append(uncertainty_attention)
+            ua_prev_plot_path = '{}/ua_boxplot_it{}.png'.format(torch_ua_log_folder, iter_i)
+            ua_after_activation_plot_path = '{}/ua_{}_boxplot_it{}.png'.format(torch_ua_log_folder, args.uncertainty_attention_activation, iter_i)
+
+            green_diamond = dict(markerfacecolor='r', marker='s')
+            plt.close()
+            plt.boxplot(uas, flierprops=green_diamond)
+            plt.title("box plot ua")
+            plt.savefig(ua_prev_plot_path, dpi=300)
+
+            plt.close()
+            plt.boxplot(uas_uaa, flierprops=green_diamond)
+            plt.title("box plot ua activation: {}".format(args.uncertainty_attention_activation))
+            plt.savefig(ua_after_activation_plot_path, dpi=300)
