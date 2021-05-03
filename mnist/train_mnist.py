@@ -581,12 +581,12 @@ if __name__ == '__main__':
                 prev_model = ConvNet(num_classes).to(device)
                 prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu, args.server_num)))
                 prev_model.eval()
-                if args.pseudo_label:
-                    ua_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
-                else:
-                    ua_set = MaxwellFDFDDataset(L_x, L_y, transform=False)
+                # if args.pseudo_label:
+                #     ua_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
+                # else:
+                #     ua_set = MaxwellFDFDDataset(L_x, L_y, transform=False)
                 # Data loader
-                ua_loader = torch.utils.data.DataLoader(dataset=ua_set,
+                ua_loader = torch.utils.data.DataLoader(dataset=labeled_set,
                                                             batch_size=batch_size,
                                                             shuffle=False)
                 prev_model.eval()
@@ -601,15 +601,14 @@ if __name__ == '__main__':
                     X_pr_L_ua = np.array(X_pr_L_ua)
                     X_pr_L.append(X_pr_L_ua)
             X_pr_L = np.array(X_pr_L)
-
+            rpo_array_l = []
             # Ascending order Sorted
-            rpo_ua_array = entropy(X_pr_L)
-            print(rpo_ua_array)
-            exit()
-            rpo_ua_array = np.max(X_pr_L, axis=0) - np.min(X_pr_L, axis=0)
-            if args.rpo_type == 'max_stdev':
-                rpo_ua_array = np.std(X_pr_L, axis=0)
-            rpo_ua_array_average = np.average(rpo_ua_array, axis=1)
+            for i in range(X_pr_L.shape[0]):
+                softmax_pr_l = softmax(X_pr_L[i])
+                rpo_array_l.append(entropy(softmax_pr_l))
+
+            rpo_ua_array_average = np.array(rpo_array_l)
+
 
             if args.uncertainty_attention_activation == 'sigmoid':
                 uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * rpo_ua_array_average))
