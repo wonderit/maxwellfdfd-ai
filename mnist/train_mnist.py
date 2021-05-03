@@ -57,6 +57,11 @@ def mse_loss(input, target):
 def sqrt_loss(input, target):
     return ((input-target) ** 0.5).sum() / input.data.nelement()
 
+
+def softmax(x):
+    f_x = np.exp(x) / np.sum(np.exp(x))
+    return f_x
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="ce")
@@ -88,7 +93,7 @@ if __name__ == '__main__':
     parser.add_argument("-z", "--z_score", type=float, default=2.0)
     parser.add_argument("-pl", "--pseudo_label", action='store_true')
     # arg for rpo type
-    parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff, random)", default='max_diff')
+    parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff, random)", default='max_ce')
 
     # arg for uncertainty attention
     parser.add_argument("-ua", "--uncertainty_attention", help="flag for uncertainty attention of gradients", action='store_true')
@@ -131,6 +136,7 @@ if __name__ == '__main__':
     # batch_size = 128
     # learning_rate = 0.001
 
+    args.is_active_learning = True
     batch_size = int(args.batch_size)
     num_epochs = int(args.max_epoch)
     loss_functions = args.loss_function
@@ -443,7 +449,7 @@ if __name__ == '__main__':
 
             # Test the model
             model.eval()
-
+            acc = 0
             with torch.no_grad():
                 correct = 0
                 total = 0
@@ -455,11 +461,12 @@ if __name__ == '__main__':
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()
 
+                acc = 100 * correct / total
                 print('Test Accuracy of the model on the 10000 test images: {} %'.format(100 * correct / total))
 
 
             # Save the model result text
-            model_file_result = f'{torch_model_result_text_folder}/model_it{iter_i}_m{m}_ep{early_stopped_epoch}_lr{learning_rate}.txt'
+            model_file_result = f'{torch_model_result_text_folder}/model_it{iter_i}_m{m}_acc{acc}_lr{learning_rate}.txt'
 
             with open(model_file_result, "w") as f:
                 f.write(f'{model_file_result}')
@@ -482,7 +489,7 @@ if __name__ == '__main__':
             plt.ylabel('Loss')
             plt.title('Model - Loss')
             plt.legend(['Training', 'Validation'], loc='upper right')
-            log_curve_file_name = f'{torch_loss_folder}/log-curve-it{iter_i}-m{m}-ep{early_stopped_epoch}-lr{learning_rate}.png'
+            log_curve_file_name = f'{torch_loss_folder}/log-curve-it{iter_i}-m{m}-acc{acc}-lr{learning_rate}.png'
             plt.savefig(log_curve_file_name)
 
             # AL start
@@ -504,33 +511,16 @@ if __name__ == '__main__':
                         x_pr_active.extend(np_pred)
 
                     x_pr_active = np.array(x_pr_active)
-                    X_pr.append(x_pr_active)
-                        # _, predicted = torch.max(outputs.data, 1)
-                        # total += labels.size(0)
-                        # correct += (predicted == labels).sum().item()
-
-                    # print('Test Accuracy of the model on the 10000 test images: {} %'.format(100 * correct / total))
-
-                    x_pr_active = []
-                    for (active_images, active_labels) in active_loader:
-                        torch_U_x_image = active_images.to(device)
-                        predict_from_model = model(torch_U_x_image)
-
-                        np_pred = predict_from_model.cpu().data.numpy()
-                        x_pr_active.extend(np_pred)
-                    x_pr_active = np.array(x_pr_active)
-                    X_pr.append(x_pr_active)
+                    X_pr.extend(x_pr_active)
 
         if not args.is_active_random:
             X_pr = np.array(X_pr)
-
+            rpo_array = []
             # Ascending order Sorted
-
-            rpo_array = entropy(X_pr)
-            print(rpo_ua_array)
+            for i in range(X_pr.shape[0]):
+                softmax_pr = softmax(X_pr[i])
+                rpo_array.append(entropy(softmax_pr))
             rpo_array_arg_sort = np.argsort(rpo_array)
-            print(rpo_array_arg_sort)
-            exit()
             #
             # # rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
             # if args.rpo_type == 'max_stdev':
@@ -571,27 +561,14 @@ if __name__ == '__main__':
                 U_indices = rpo_array_arg_sort[:U_length]
                 L_indices = rpo_array_arg_sort[U_length:]
 
-            L_x = np.append(L_x, U_x[L_indices], axis=0)
-            L_y = np.append(L_y, U_y[L_indices], axis=0)
-
-            U_x = U_x[U_indices]
-            U_y = U_y[U_indices]
-
-            # if pseudo label
-            if args.pseudo_label:
-                X_pr_avg = np.average(X_pr, axis=0)
-                X_pr_avg_U = X_pr_avg[U_indices]
-                PL_x = np.append(L_x, U_x, axis=0)
-                PL_y = np.append(L_y, X_pr_avg_U, axis = 0)
-                # shuffle Pseudo Labeled data
-                shuffle_index = np.random.permutation(len(PL_x))
-                PL_x = PL_x[shuffle_index]
-                PL_y = PL_y[shuffle_index]
+            active_labeled_set = torch.utils.data.Subset(unlabeled_set, L_indices)
+            active_unlabeled_set = torch.utils.data.Subset(unlabeled_set, U_indices)
+            labeled_set = torch.utils.data.ConcatDataset([labeled_set, active_labeled_set])
+            unlabeled_set = active_unlabeled_set
 
         # shuffle Labeled data
-        shuffle_index = np.random.permutation(len(L_x))
-        L_x = L_x[shuffle_index]
-        L_y = L_y[shuffle_index]
+        shuffle_index = np.random.permutation(len(labeled_set))
+        labeled_set = torch.utils.data.Subset(labeled_set, shuffle_index)
 
         # add uncertainty attention
         if args.uncertainty_attention:
