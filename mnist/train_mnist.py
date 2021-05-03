@@ -520,7 +520,10 @@ if __name__ == '__main__':
             for i in range(X_pr.shape[0]):
                 softmax_pr = softmax(X_pr[i])
                 rpo_array.append(entropy(softmax_pr))
-            rpo_array_arg_sort = np.argsort(rpo_array)
+            if args.rpo_type == 'random':
+                rpo_array_arg_sort = np.random.permutation(len(rpo_array))
+            else:
+                rpo_array_arg_sort = np.argsort(rpo_array)
             #
             # # rpo_array = np.max(X_pr, axis=0) - np.min(X_pr, axis=0)
             # if args.rpo_type == 'max_stdev':
