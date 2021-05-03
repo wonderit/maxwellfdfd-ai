@@ -102,7 +102,7 @@ if __name__ == '__main__':
     parser.add_argument("-uaa", "--uncertainty_attention_activation", help="flag for uncertainty attention of gradients",
                         default='sigmoid')
     parser.add_argument("-ut", "--uncertainty_attention_type", default='residual')
-    parser.add_argument("-ual", "--uncertainty_attention_lambda", type=float, default=1.0)
+    parser.add_argument("-ual", "--uncertainty_attention_lambda", type=float, default=0.1)
     parser.add_argument("-uag", "--uncertainty_attention_grad", action='store_true')
 
     # arg for wd
@@ -419,18 +419,42 @@ if __name__ == '__main__':
                     outputs = model(images)
 
                     if args.uncertainty_attention and uncertainty_attention is not None:
-                        uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
+                       # uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
                         ua_end = batch_size * i + batch_size
                         ua_start = batch_size * i
-                        if ua_end < len(uncertainty_attention_resize):
-                            batch_ua = uncertainty_attention_resize[ua_start:ua_end]
+                        if ua_end < len(uncertainty_attention):
+                            batch_ua = uncertainty_attention[ua_start:ua_end]
                         else:
-                            batch_ua = uncertainty_attention_resize[ua_start:]
+                            batch_ua = uncertainty_attention[ua_start:]
                         batch_ua_torch = torch.from_numpy(batch_ua).to(device)
                         batch_ua_torch.requires_grad = uncertainty_attention_grad
 
-                    loss = criterion(outputs, labels)
-
+                        if args.uncertainty_attention_type == 'multiply':
+                            loss = (torch.abs(outputs - labels) * batch_ua_torch).sum() / outputs.data.nelement()
+                        elif args.uncertainty_attention_type == 'residual':
+                            log_softmax = torch.nn.LogSoftmax(dim=1)
+                            x_log = log_softmax(outputs)
+                            #loss = (-x_log[range(labels.shape[0]), labels] * (1. + args.uncertainty_attention_lambda * batch_ua_torch)).sum() / outputs.data.nelement()
+                            loss = (-x_log[range(labels.shape[0]), labels]* (1. + batch_ua_torch)).mean()
+                            #loss = (torch.abs(outputs - labels) * (1. + batch_ua_torch)).sum() / outputs.data.nelement()
+                        elif args.uncertainty_attention_type == 'add':
+                            loss = (torch.abs(
+                                outputs - labels) + args.uncertainty_attention_lambda * batch_ua_torch).sum() / outputs.data.nelement()
+                        elif args.uncertainty_attention_type == 'lambda_residual':
+                            log_softmax = torch.nn.LogSoftmax(dim=1)
+                            x_log = log_softmax(outputs)
+                            loss = (-x_log[range(labels.shape[0]), labels] * (1. + args.uncertainty_attention_lambda * batch_ua_torch)).mean()
+                        elif args.uncertainty_attention_type == 'lambda_residual_minus':
+                            log_softmax = torch.nn.LogSoftmax(dim=1)
+                            x_log = log_softmax(outputs)
+                            loss = (-x_log[range(labels.shape[0]), labels] * (
+                                        1. - args.uncertainty_attention_lambda * batch_ua_torch)).mean()
+                        else:
+                            loss = nn.CrossEntropyLoss()(outputs, labels)
+                    else:
+                        log_softmax = torch.nn.LogSoftmax(dim=1)
+                        x_log = log_softmax(outputs)
+                        loss = (-x_log[range(labels.shape[0]), labels]).mean()
                     # Backward and optimize
                     optimizer.zero_grad()
                     loss.backward()
