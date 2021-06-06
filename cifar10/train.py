@@ -55,7 +55,7 @@ def softmax(x):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="ce")
-    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.1)
+    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
 
-    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='sgd')
+    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
     parser.add_argument("-bn", "--is_batch_norm", help="Set is_batch_norm", action='store_true')
     # arg for AL
     parser.add_argument("-it", "--iteration", help="Set iteration for AL", type=int, default=1)
@@ -162,30 +162,34 @@ if __name__ == '__main__':
     print('Data Loading... Train dataset Start.')
 
     # reshape dataset
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
+    # Image preprocessing modules
+    transform = transforms.Compose([
+        transforms.Pad(4),
         transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+        transforms.RandomCrop(32),
+        transforms.ToTensor()])
 
-    transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+    # transform_train = transforms.Compose([
+    #     transforms.RandomCrop(32, padding=4),
+    #     transforms.RandomHorizontalFlip(),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    # ])
+    #
+    # transform_test = transforms.Compose([
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    # ])
 
     train_dataset = datasets.CIFAR10(root=f'./data/',
                                      train=True,
                                      download=False,
-                                     transform=transform_train)
+                                     transform=transform)
     test_dataset = datasets.CIFAR10(root='data/',
                                     train=False,
                                     download=False,
-                                    transform=transform_test)
+                                    transform=transform)
 
     # Dataset for AL Start
     ITERATION = args.iteration
