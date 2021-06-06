@@ -347,7 +347,8 @@ if __name__ == '__main__':
                 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=0.9)
 
             # Lr scheduler
-            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
+            # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
             # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
             #                                                        min_lr=learning_rate * 0.001, verbose=True)
 
