@@ -130,7 +130,7 @@ if __name__ == '__main__':
 
     # Hyper parameters
     # num_epochs = 10
-    num_classes = 24
+    num_classes = 10
     # batch_size = 128
     # learning_rate = 0.001
 
@@ -239,10 +239,10 @@ if __name__ == '__main__':
 
 
     class ConvNet(nn.Module):
-        def __init__(self, num_classes=24):
+        def __init__(self, num_classes=10):
             super(ConvNet, self).__init__()
             self.layer1 = nn.Sequential(
-                nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=0),
+                nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=0),
                 nn.BatchNorm2d(32),
                 nn.ReLU(),
                 # nn.MaxPool2d(kernel_size=2, stride=2)
@@ -265,7 +265,7 @@ if __name__ == '__main__':
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2)
             )
-            self.fc = nn.Linear(10 * 10 * 64, num_classes)
+            self.fc = nn.Linear(9216, num_classes)
 
         def forward(self, x):
             out = self.layer1(x)
