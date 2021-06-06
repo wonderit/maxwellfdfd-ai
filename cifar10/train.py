@@ -92,7 +92,7 @@ if __name__ == '__main__':
     parser.add_argument("-sb", "--sigmoid_beta", help="beta of sigmoid", type=float, default=1.0)
     parser.add_argument("-uaa", "--uncertainty_attention_activation", help="flag for uncertainty attention of gradients",
                         default='sigmoid')
-    parser.add_argument("-ut", "--uncertainty_attention_type", default='residual')
+    parser.add_argument("-ut", "--uncertainty_attention_type", default='lambda_residual')
     parser.add_argument("-ual", "--uncertainty_attention_lambda", type=float, default=0.1)
     parser.add_argument("-uag", "--uncertainty_attention_grad", action='store_true')
 
