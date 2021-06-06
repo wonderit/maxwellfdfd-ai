@@ -1,12 +1,10 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
 import argparse
 from PIL import Image
 import os
 import pandas as pd
-from sklearn.metrics import r2_score, mean_squared_error
 from scipy.stats import entropy
 
 from torch.utils.data import Dataset
@@ -27,7 +25,7 @@ from torch.utils.data import DataLoader
 random_seed = 999
 torch.manual_seed(random_seed)
 torch.cuda.manual_seed(random_seed)
-torch.cuda.manual_seed_all(random_seed) # if use multi-GPU
+torch.cuda.manual_seed_all(random_seed)  # if use multi-GPU
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(random_seed)
@@ -176,19 +174,26 @@ if __name__ == '__main__':
 
     # reshape dataset
 
-    train_dataset = datasets.MNIST(root=f'./data/',
-                                   train=True,
-                                   transform=transforms.ToTensor(),
-                                   download=False)
+    # train_dataset = datasets.MNIST(root=f'./data/',
+    #                                train=True,
+    #                                transform=transforms.ToTensor(),
+    #                                download=False)
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    train_dataset = datasets.CIFAR10(root=f'./data/',
+                                     train=True,
+                                     download=True,
+                                     transform=transform)
     # random_idx = list(range(0, num_samples))
     # random_idx = np.random.permutation(args.sample_number)
     # train_subset = torch.utils.data.Subset(train_dataset, random_idx)
 
     # %%
 
-    test_dataset = datasets.MNIST(root='data/',
+    test_dataset = datasets.CIFAR10(root='data/',
                                   train=False,
-                                  transform=transforms.ToTensor())
+                                  transform=transform)
 
     # Data loader
     # train_loader = torch.utils.data.DataLoader(dataset=train_subset,

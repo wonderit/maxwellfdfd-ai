@@ -218,7 +218,7 @@ MODEL_H5_PATH = ''
 myeongjo = 'NanumMyeongjo'
 
 for i, model_name_detail in enumerate(model_name_details):
-    MODEL_JSON_PATH = 'models_paper/{}/{}.json'.format(model_name, model_name_detail)
+    MODEL_JSON_PATH = 'models_paper/{}/{}.json'.format(m odel_name, model_name_detail)
     MODEL_H5_PATH = 'models_paper/{}/{}.h5'.format(model_name, model_name_detail)
     print("Loaded model : {}".format(model_name_detail))
 
