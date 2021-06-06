@@ -307,7 +307,7 @@ if __name__ == '__main__':
             else:
                 model = DenseNet121().to(device)
             if device.type == 'cuda':
-                net = torch.nn.DataParallel(net)
+                model = torch.nn.DataParallel(model)
 
             # Initialize weights
             if args.remember_model and iter_i > 0:
