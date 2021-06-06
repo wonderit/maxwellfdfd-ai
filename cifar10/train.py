@@ -316,9 +316,9 @@ if __name__ == '__main__':
                 print('Get teacher model for tor loss')
                 # prev_model = ConvNet(num_classes).to(device)
                 if args.model_type == 'resnet':
-                    model = ResNet18().to(device)
+                    prev_model = ResNet18().to(device)
                 else:
-                    model = DenseNet121().to(device)
+                    prev_model = DenseNet121().to(device)
                 prev_model.load_state_dict(torch.load(prev_model_path))
                 prev_model.eval()
 
@@ -539,9 +539,9 @@ if __name__ == '__main__':
             for ua_i in range(num_models):
                 # prev_model = ConvNet(num_classes).to(device)
                 if args.model_type == 'resnet':
-                    model = ResNet18().to(device)
+                    prev_model = ResNet18().to(device)
                 else:
-                    model = DenseNet121().to(device)
+                    prev_model = DenseNet121().to(device)
                 prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu, args.server_num)))
                 prev_model.eval()
                 # if args.pseudo_label:
