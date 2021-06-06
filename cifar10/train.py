@@ -9,6 +9,7 @@ from pytorchtools import EarlyStopping
 import random
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
+from networks import *
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
@@ -83,6 +84,7 @@ if __name__ == '__main__':
     parser.add_argument("-pl", "--pseudo_label", action='store_true')
     # arg for rpo type
     parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff, random)", default='max_ce')
+    parser.add_argument("-mt", "--model_type", help="Select model type.. (resnet, densenet)", default='resnet')
 
     # arg for uncertainty attention
     parser.add_argument("-ua", "--uncertainty_attention", help="flag for uncertainty attention of gradients", action='store_true')
@@ -142,7 +144,6 @@ if __name__ == '__main__':
             return 0.1
 
     if args.unit_test:
-
         args.debug = True
         args.max_epoch = 1
         args.iteration = 2
@@ -162,14 +163,29 @@ if __name__ == '__main__':
     transform = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+
     train_dataset = datasets.CIFAR10(root=f'./data/',
                                      train=True,
                                      download=False,
-                                     transform=transform)
+                                     shuffle=False,
+                                     transform=transform_train)
     test_dataset = datasets.CIFAR10(root='data/',
-                                  train=False,
+                                    train=False,
                                     download=False,
-                                  transform=transform)
+                                    shuffle=False,
+                                    transform=transform_test)
 
     # Dataset for AL Start
     ITERATION = args.iteration
@@ -192,43 +208,6 @@ if __name__ == '__main__':
         labeled_set = torch.utils.data.Subset(train_dataset, L_indices)
         unlabeled_set = torch.utils.data.Subset(train_dataset, U_indices)
 
-    class ConvNet(nn.Module):
-        def __init__(self, num_classes=10):
-            super(ConvNet, self).__init__()
-            self.layer1 = nn.Sequential(
-                nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=0),
-                nn.BatchNorm2d(32),
-                nn.ReLU(),
-                # nn.MaxPool2d(kernel_size=2, stride=2)
-            )
-            self.layer2 = nn.Sequential(
-                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=0),
-                nn.BatchNorm2d(64),
-                nn.ReLU(),
-                # nn.MaxPool2d(kernel_size=2, stride=2)
-            )
-            self.layer3 = nn.Sequential(
-                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-                nn.BatchNorm2d(64),
-                nn.ReLU(),
-                # nn.MaxPool2d(kernel_size=2, stride=2)
-            )
-            self.layer4 = nn.Sequential(
-                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-                nn.BatchNorm2d(64),
-                nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2)
-            )
-            self.fc = nn.Linear(9216, num_classes)
-
-        def forward(self, x):
-            out = self.layer1(x)
-            out = self.layer2(out)
-            out = self.layer3(out)
-            out = self.layer4(out)
-            out = out.reshape(out.size(0), -1)
-            out = self.fc(out)
-            return out
 
     # create loss log folder
     al_type = f'al_g{args.gpu}_s{args.server_num}'
@@ -270,8 +249,8 @@ if __name__ == '__main__':
         else:
             al_type = al_type + '_ua{}_{}'.format(args.uncertainty_attention_type, args.uncertainty_attention_activation)
 
-    log_folder = 'torch/{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
-        al_type, args.loss_function, args.optimizer, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
+    log_folder = 'torch/{}_{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
+        al_type, args.loss_function, args.optimizer, args.model_type, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
     )
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
@@ -324,12 +303,22 @@ if __name__ == '__main__':
             val_loss_array = []
             train_loss_array = []
 
-            model = ConvNet(num_classes).to(device)
+            # model = ConvNet(num_classes).to(device)
+            if args.model_type=='resnet':
+                model = ResNet18().to(device)
+            else:
+                model = DenseNet121().to(device)
+            if device.type == 'cuda':
+                net = torch.nn.DataParallel(net)
 
             # Initialize weights
             if args.remember_model and iter_i > 0:
                 print('Get teacher model for tor loss')
-                prev_model = ConvNet(num_classes).to(device)
+                # prev_model = ConvNet(num_classes).to(device)
+                if args.model_type == 'resnet':
+                    model = ResNet18().to(device)
+                else:
+                    model = DenseNet121().to(device)
                 prev_model.load_state_dict(torch.load(prev_model_path))
                 prev_model.eval()
 
@@ -547,7 +536,11 @@ if __name__ == '__main__':
             print('load model and calculate uncertainty for attention model')
             X_pr_L = []
             for ua_i in range(num_models):
-                prev_model = ConvNet(num_classes).to(device)
+                # prev_model = ConvNet(num_classes).to(device)
+                if args.model_type == 'resnet':
+                    model = ResNet18().to(device)
+                else:
+                    model = DenseNet121().to(device)
                 prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu, args.server_num)))
                 prev_model.eval()
                 # if args.pseudo_label:
