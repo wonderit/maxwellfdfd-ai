@@ -2,26 +2,15 @@ import torch
 import torch.nn as nn
 import numpy as np
 import argparse
-from PIL import Image
 import os
 import pandas as pd
 from scipy.stats import entropy
-
-from torch.utils.data import Dataset
-import matplotlib.pyplot as plt
-
 from pytorchtools import EarlyStopping
 import random
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
-
-
-# # Hyper parameters
-# num_epochs = 10
-# num_classes = 24
-# batch_size = 128
-# learning_rate = 0.001
 
 # Set deterministic random seed
 random_seed = 999
@@ -131,10 +120,7 @@ if __name__ == '__main__':
     # args.unit_test = True
 
     # Hyper parameters
-    # num_epochs = 10
     num_classes = 10
-    # batch_size = 128
-    # learning_rate = 0.001
 
     args.is_active_learning = True
     batch_size = int(args.batch_size)
@@ -145,8 +131,6 @@ if __name__ == '__main__':
     uncertainty_attention_grad = False
     if args.uncertainty_attention_grad:
         uncertainty_attention_grad = True
-
-    img_rows, img_cols, channels = 100, 200, 1
 
 
     def lr_decay(step):
@@ -175,11 +159,6 @@ if __name__ == '__main__':
     print('Data Loading... Train dataset Start.')
 
     # reshape dataset
-
-    # train_dataset = datasets.MNIST(root=f'./data/',
-    #                                train=True,
-    #                                transform=transforms.ToTensor(),
-    #                                download=False)
     transform = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -187,25 +166,9 @@ if __name__ == '__main__':
                                      train=True,
                                      download=True,
                                      transform=transform)
-    # random_idx = list(range(0, num_samples))
-    # random_idx = np.random.permutation(args.sample_number)
-    # train_subset = torch.utils.data.Subset(train_dataset, random_idx)
-
-    # %%
-
     test_dataset = datasets.CIFAR10(root='data/',
                                   train=False,
                                   transform=transform)
-
-    # Data loader
-    # train_loader = torch.utils.data.DataLoader(dataset=train_subset,
-    #                                            batch_size=batch_size,
-    #                                            shuffle=True)
-    #
-    # test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-    #                                           batch_size=batch_size,
-    #                                           shuffle=False)
-
 
     # Dataset for AL Start
     ITERATION = args.iteration
@@ -227,18 +190,6 @@ if __name__ == '__main__':
 
         labeled_set = torch.utils.data.Subset(train_dataset, L_indices)
         unlabeled_set = torch.utils.data.Subset(train_dataset, U_indices)
-        # L_y = torch.utils.data.Subset(train_dataset)
-        # L_x = x_train[L_indices]
-        # L_y = y_train[L_indices]
-        #
-        # U_x = x_train[U_indices]
-        # U_y = y_train[U_indices]
-        # ITERATION = ITERATION + 1
-
-        # if args.pseudo_label:
-        #     PL_x = L_x
-        #     PL_y = L_y
-
 
     class ConvNet(nn.Module):
         def __init__(self, num_classes=10):

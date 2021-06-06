@@ -1,12 +1,10 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
 import argparse
 from PIL import Image
 import os
 import pandas as pd
-from sklearn.metrics import r2_score, mean_squared_error
 from scipy.stats import entropy
 
 from torch.utils.data import Dataset
@@ -27,7 +25,7 @@ from torch.utils.data import DataLoader
 random_seed = 999
 torch.manual_seed(random_seed)
 torch.cuda.manual_seed(random_seed)
-torch.cuda.manual_seed_all(random_seed) # if use multi-GPU
+torch.cuda.manual_seed_all(random_seed)  # if use multi-GPU
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(random_seed)
@@ -132,7 +130,7 @@ if __name__ == '__main__':
 
     # Hyper parameters
     # num_epochs = 10
-    num_classes = 24
+    num_classes = 100
     # batch_size = 128
     # learning_rate = 0.001
 
@@ -176,19 +174,26 @@ if __name__ == '__main__':
 
     # reshape dataset
 
-    train_dataset = datasets.MNIST(root=f'./data/',
-                                   train=True,
-                                   transform=transforms.ToTensor(),
-                                   download=False)
+    # train_dataset = datasets.MNIST(root=f'./data/',
+    #                                train=True,
+    #                                transform=transforms.ToTensor(),
+    #                                download=False)
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    train_dataset = datasets.CIFAR100(root=f'./data/',
+                                     train=True,
+                                     download=True,
+                                     transform=transform)
     # random_idx = list(range(0, num_samples))
     # random_idx = np.random.permutation(args.sample_number)
     # train_subset = torch.utils.data.Subset(train_dataset, random_idx)
 
     # %%
 
-    test_dataset = datasets.MNIST(root='data/',
+    test_dataset = datasets.CIFAR100(root='data/',
                                   train=False,
-                                  transform=transforms.ToTensor())
+                                  transform=transform)
 
     # Data loader
     # train_loader = torch.utils.data.DataLoader(dataset=train_subset,
@@ -234,10 +239,10 @@ if __name__ == '__main__':
 
 
     class ConvNet(nn.Module):
-        def __init__(self, num_classes=24):
+        def __init__(self, num_classes=10):
             super(ConvNet, self).__init__()
             self.layer1 = nn.Sequential(
-                nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=0),
+                nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=0),
                 nn.BatchNorm2d(32),
                 nn.ReLU(),
                 # nn.MaxPool2d(kernel_size=2, stride=2)
@@ -260,7 +265,7 @@ if __name__ == '__main__':
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=2, stride=2)
             )
-            self.fc = nn.Linear(10 * 10 * 64, num_classes)
+            self.fc = nn.Linear(9216, num_classes)
 
         def forward(self, x):
             out = self.layer1(x)
