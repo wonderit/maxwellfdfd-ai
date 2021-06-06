@@ -14,6 +14,8 @@ from pytorchtools import EarlyStopping
 import random
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
 
 # # Hyper parameters
 # num_epochs = 10
