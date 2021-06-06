@@ -1,3 +1,3 @@
 #!/bin/bash
 
-nohup python -u train.py -a -e 100 -it 10 > train.log &
+nohup python -u train.py -a -e 100 -it 5 > train.log &
