@@ -1,2 +1,2 @@
+export PYTHONPATH="${PYTHONPATH}:/{path}/maxwellfdfd-ai"
 
-python train
