@@ -192,7 +192,7 @@ if __name__ == '__main__':
     test_dataset = datasets.CIFAR10(root='data/',
                                     train=False,
                                     download=False,
-                                    transform=transform)
+                                    transform=transforms.ToTensor())
 
     # Dataset for AL Start
     ITERATION = args.iteration
