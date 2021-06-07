@@ -1,25 +1,17 @@
-import torch
-import torch.nn as nn
+import sys
+sys.path.append('/Users/wonderit/projects/koreauniv/maxwellfdfd-ai')
 import numpy as np
 import argparse
-from PIL import Image
 import os
 import pandas as pd
 from scipy.stats import entropy
-
-from torch.utils.data import Dataset
-import matplotlib.pyplot as plt
-
 from pytorchtools import EarlyStopping
 import random
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+from networks import *
 
-# # Hyper parameters
-# num_epochs = 10
-# num_classes = 24
-# batch_size = 128
-# learning_rate = 0.001
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # Set deterministic random seed
 random_seed = 999
@@ -57,21 +49,26 @@ def sqrt_loss(input, target):
 
 
 def softmax(x):
-    f_x = np.exp(x) / np.sum(np.exp(x))
-    return f_x
+    max_x = np.max(x)
+    exp_x = np.exp(x - max_x)
+    sum_exp_x = np.exp(exp_x)
+    return exp_x / sum_exp_x
+
+    # f_x = np.exp(x) / np.sum(np.exp(x))
+    # return f_x
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="ce")
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
-    parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=32)
+    parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
     # arg for testing parameters
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
 
-    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='sgd')
+    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
     parser.add_argument("-bn", "--is_batch_norm", help="Set is_batch_norm", action='store_true')
     # arg for AL
     parser.add_argument("-it", "--iteration", help="Set iteration for AL", type=int, default=1)
@@ -92,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument("-pl", "--pseudo_label", action='store_true')
     # arg for rpo type
     parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff, random)", default='max_ce')
+    parser.add_argument("-mt", "--model_type", help="Select model type.. (resnet, densenet)", default='resnet')
 
     # arg for uncertainty attention
     parser.add_argument("-ua", "--uncertainty_attention", help="flag for uncertainty attention of gradients", action='store_true')
@@ -99,12 +97,12 @@ if __name__ == '__main__':
     parser.add_argument("-sb", "--sigmoid_beta", help="beta of sigmoid", type=float, default=1.0)
     parser.add_argument("-uaa", "--uncertainty_attention_activation", help="flag for uncertainty attention of gradients",
                         default='sigmoid')
-    parser.add_argument("-ut", "--uncertainty_attention_type", default='residual')
+    parser.add_argument("-ut", "--uncertainty_attention_type", default='lambda_residual')
     parser.add_argument("-ual", "--uncertainty_attention_lambda", type=float, default=0.1)
     parser.add_argument("-uag", "--uncertainty_attention_grad", action='store_true')
 
     # arg for wd
-    parser.add_argument("-wd", "--weight_decay", type=float, default=0.0)
+    parser.add_argument("-wd", "--weight_decay", type=float, default=1e-4)
     parser.add_argument("-wds", "--weight_decay_schedule", action='store_true')
 
     # arg for gpu
@@ -129,10 +127,7 @@ if __name__ == '__main__':
     # args.unit_test = True
 
     # Hyper parameters
-    # num_epochs = 10
-    num_classes = 100
-    # batch_size = 128
-    # learning_rate = 0.001
+    # num_classes = 10
 
     args.is_active_learning = True
     batch_size = int(args.batch_size)
@@ -144,19 +139,7 @@ if __name__ == '__main__':
     if args.uncertainty_attention_grad:
         uncertainty_attention_grad = True
 
-    img_rows, img_cols, channels = 100, 200, 1
-
-
-    def lr_decay(step):
-        epoch = step // (args.sample_number // batch_size)
-        # print(f'step:{step}, epoch:{epoch}, num_samples:{num_samples}, batch size:{batch_size}')
-        if epoch < 50:
-            return 1.0
-        else:
-            return 0.1
-
     if args.unit_test:
-
         args.debug = True
         args.max_epoch = 1
         args.iteration = 2
@@ -174,36 +157,21 @@ if __name__ == '__main__':
 
     # reshape dataset
 
-    # train_dataset = datasets.MNIST(root=f'./data/',
-    #                                train=True,
-    #                                transform=transforms.ToTensor(),
-    #                                download=False)
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    # Image preprocessing modules
+    transform = transforms.Compose([
+        transforms.Pad(4),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomCrop(32),
+        transforms.ToTensor()])
+
     train_dataset = datasets.CIFAR100(root=f'./data/',
                                      train=True,
                                      download=True,
                                      transform=transform)
-    # random_idx = list(range(0, num_samples))
-    # random_idx = np.random.permutation(args.sample_number)
-    # train_subset = torch.utils.data.Subset(train_dataset, random_idx)
-
-    # %%
-
     test_dataset = datasets.CIFAR100(root='data/',
-                                  train=False,
-                                  transform=transform)
-
-    # Data loader
-    # train_loader = torch.utils.data.DataLoader(dataset=train_subset,
-    #                                            batch_size=batch_size,
-    #                                            shuffle=True)
-    #
-    # test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-    #                                           batch_size=batch_size,
-    #                                           shuffle=False)
-
+                                    train=False,
+                                    download=False,
+                                    transform=transforms.ToTensor())
 
     # Dataset for AL Start
     ITERATION = args.iteration
@@ -225,56 +193,7 @@ if __name__ == '__main__':
 
         labeled_set = torch.utils.data.Subset(train_dataset, L_indices)
         unlabeled_set = torch.utils.data.Subset(train_dataset, U_indices)
-        # L_y = torch.utils.data.Subset(train_dataset)
-        # L_x = x_train[L_indices]
-        # L_y = y_train[L_indices]
-        #
-        # U_x = x_train[U_indices]
-        # U_y = y_train[U_indices]
-        # ITERATION = ITERATION + 1
 
-        # if args.pseudo_label:
-        #     PL_x = L_x
-        #     PL_y = L_y
-
-
-    class ConvNet(nn.Module):
-        def __init__(self, num_classes=10):
-            super(ConvNet, self).__init__()
-            self.layer1 = nn.Sequential(
-                nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=0),
-                nn.BatchNorm2d(32),
-                nn.ReLU(),
-                # nn.MaxPool2d(kernel_size=2, stride=2)
-            )
-            self.layer2 = nn.Sequential(
-                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=0),
-                nn.BatchNorm2d(64),
-                nn.ReLU(),
-                # nn.MaxPool2d(kernel_size=2, stride=2)
-            )
-            self.layer3 = nn.Sequential(
-                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-                nn.BatchNorm2d(64),
-                nn.ReLU(),
-                # nn.MaxPool2d(kernel_size=2, stride=2)
-            )
-            self.layer4 = nn.Sequential(
-                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-                nn.BatchNorm2d(64),
-                nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2)
-            )
-            self.fc = nn.Linear(9216, num_classes)
-
-        def forward(self, x):
-            out = self.layer1(x)
-            out = self.layer2(out)
-            out = self.layer3(out)
-            out = self.layer4(out)
-            out = out.reshape(out.size(0), -1)
-            out = self.fc(out)
-            return out
 
     # create loss log folder
     al_type = f'al_g{args.gpu}_s{args.server_num}'
@@ -316,8 +235,8 @@ if __name__ == '__main__':
         else:
             al_type = al_type + '_ua{}_{}'.format(args.uncertainty_attention_type, args.uncertainty_attention_activation)
 
-    log_folder = 'torch/{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
-        al_type, args.loss_function, args.optimizer, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
+    log_folder = 'torch/{}_{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
+        al_type, args.loss_function, args.optimizer, args.model_type, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
     )
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
@@ -370,12 +289,22 @@ if __name__ == '__main__':
             val_loss_array = []
             train_loss_array = []
 
-            model = ConvNet(num_classes).to(device)
+            # model = ConvNet(num_classes).to(device)
+            if args.model_type == 'resnet':
+                model = ResNet18(num_class=100).to(device)
+            else:
+                model = DenseNet121().to(device)
+            # if device.type == 'cuda':
+            #     model = torch.nn.DataParallel(model)
 
             # Initialize weights
             if args.remember_model and iter_i > 0:
                 print('Get teacher model for tor loss')
-                prev_model = ConvNet(num_classes).to(device)
+                # prev_model = ConvNet(num_classes).to(device)
+                if args.model_type == 'resnet':
+                    prev_model = ResNet18(num_class=100).to(device)
+                else:
+                    prev_model = DenseNet121().to(device)
                 prev_model.load_state_dict(torch.load(prev_model_path))
                 prev_model.eval()
 
@@ -401,10 +330,14 @@ if __name__ == '__main__':
             elif args.optimizer == 'adamw':
                 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
             else:
-                optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+                optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=0.9)
 
             # Lr scheduler
-            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
+
+            # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 80], gamma=0.5)
+            # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
+            # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
             # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
             #                                                        min_lr=learning_rate * 0.001, verbose=True)
 
@@ -424,7 +357,6 @@ if __name__ == '__main__':
                     outputs = model(images)
 
                     if args.uncertainty_attention and uncertainty_attention is not None:
-                       # uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
                         ua_end = batch_size * i + batch_size
                         ua_start = batch_size * i
                         if ua_end < len(uncertainty_attention):
@@ -475,6 +407,20 @@ if __name__ == '__main__':
 
                 train_loss_array.append(train_loss / count)
 
+                # Test the model
+                model.eval()
+                test_running_loss = 0
+                count = 0
+                with torch.no_grad():
+                    for images, labels in test_loader:
+                        images = images.to(device)
+                        labels = labels.to(device)
+                        outputs = model(images)
+                        test_loss = nn.CrossEntropyLoss()(outputs, labels)
+                    test_running_loss += test_loss.item()
+                    count += 1
+                val_loss_array.append(test_running_loss / count)
+
 
             # Test the model
             model.eval()
@@ -517,7 +463,7 @@ if __name__ == '__main__':
             plt.xlabel('Epoch')
             plt.ylabel('Loss')
             plt.title('Model - Loss')
-            plt.legend(['Training', 'Validation'], loc='upper right')
+            plt.legend(['Training', 'Test'], loc='upper right')
             log_curve_file_name = f'{torch_loss_folder}/log-curve-it{iter_i}-m{m}-acc{acc}-lr{learning_rate}.png'
             plt.savefig(log_curve_file_name)
 
@@ -593,7 +539,11 @@ if __name__ == '__main__':
             print('load model and calculate uncertainty for attention model')
             X_pr_L = []
             for ua_i in range(num_models):
-                prev_model = ConvNet(num_classes).to(device)
+                # prev_model = ConvNet(num_classes).to(device)
+                if args.model_type == 'resnet':
+                    prev_model = ResNet18(num_class=100).to(device)
+                else:
+                    prev_model = DenseNet121().to(device)
                 prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu, args.server_num)))
                 prev_model.eval()
                 # if args.pseudo_label:
