@@ -166,7 +166,7 @@ if __name__ == '__main__':
 
     train_dataset = datasets.CIFAR100(root=f'./data/',
                                      train=True,
-                                     download=True,
+                                     download=False,
                                      transform=transform)
     test_dataset = datasets.CIFAR100(root='data/',
                                     train=False,
