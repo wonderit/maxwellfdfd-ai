@@ -426,6 +426,7 @@ if __name__ == '__main__':
                 # Test the model
                 model.eval()
                 test_running_loss = 0
+                count = 0
                 with torch.no_grad():
                     for images, labels in test_loader:
                         images = images.to(device)
@@ -433,6 +434,7 @@ if __name__ == '__main__':
                         outputs = model(images)
                         test_loss = nn.CrossEntropyLoss()(outputs, labels)
                     test_running_loss += test_loss.item()
+                    count += 1
                 val_loss_array.append(test_running_loss / count)
 
 
