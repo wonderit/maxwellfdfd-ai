@@ -1,5 +1,5 @@
-import sys
-sys.path.append('/Users/wonderit/projects/koreauniv/maxwellfdfd-ai')
+# import sys
+# sys.path.append('/Users/wonderit/projects/koreauniv/maxwellfdfd-ai')
 import numpy as np
 import argparse
 import os
