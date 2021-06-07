@@ -433,8 +433,6 @@ if __name__ == '__main__':
                         outputs = model(images)
                         test_loss = nn.CrossEntropyLoss()(outputs, labels)
                     test_running_loss += test_loss.item()
-                    acc = 100 * correct / total
-                    # print('Test Accuracy of the model on the 10000 test images: {} %'.format(100 * correct / total))
                 val_loss_array.append(test_running_loss / count)
 
 
