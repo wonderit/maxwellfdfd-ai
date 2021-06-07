@@ -1,5 +1,3 @@
-import torch
-import torch.nn as nn
 import numpy as np
 import argparse
 import os
@@ -55,7 +53,7 @@ def softmax(x):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="ce")
-    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
+    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.01)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
@@ -138,6 +136,12 @@ if __name__ == '__main__':
     def lr_decay(step):
         epoch = step // (args.sample_number // batch_size)
         # print(f'step:{step}, epoch:{epoch}, num_samples:{num_samples}, batch size:{batch_size}')
+        # if epoch < 150:
+        #     return 1.0
+        # elif epoch >= 150 and epoch < 250:
+        #     return 0.1
+        # else:
+        #     return 0.01
         if epoch < 150:
             return 1.0
         elif epoch >= 150 and epoch < 250:
@@ -351,7 +355,9 @@ if __name__ == '__main__':
                 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=0.9)
 
             # Lr scheduler
-            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
+
+            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+            # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
             # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
             # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
             #                                                        min_lr=learning_rate * 0.001, verbose=True)
@@ -423,6 +429,20 @@ if __name__ == '__main__':
 
                 train_loss_array.append(train_loss / count)
 
+                # Test the model
+                model.eval()
+                test_running_loss = 0
+                with torch.no_grad():
+                    for images, labels in test_loader:
+                        images = images.to(device)
+                        labels = labels.to(device)
+                        outputs = model(images)
+                        test_loss = nn.CrossEntropyLoss()(outputs, labels)
+                    test_running_loss += test_loss.item()
+                    acc = 100 * correct / total
+                    # print('Test Accuracy of the model on the 10000 test images: {} %'.format(100 * correct / total))
+                val_loss_array.append(test_running_loss / count)
+
 
             # Test the model
             model.eval()
@@ -465,7 +485,7 @@ if __name__ == '__main__':
             plt.xlabel('Epoch')
             plt.ylabel('Loss')
             plt.title('Model - Loss')
-            plt.legend(['Training', 'Validation'], loc='upper right')
+            plt.legend(['Training', 'Test'], loc='upper right')
             log_curve_file_name = f'{torch_loss_folder}/log-curve-it{iter_i}-m{m}-acc{acc}-lr{learning_rate}.png'
             plt.savefig(log_curve_file_name)
 
