@@ -47,8 +47,13 @@ def sqrt_loss(input, target):
 
 
 def softmax(x):
-    f_x = np.exp(x) / np.sum(np.exp(x))
-    return f_x
+    max_x = np.max(x)
+    exp_x = np.exp(x - max_x)
+    sum_exp_x = np.exp(exp_x)
+    return exp_x / sum_exp_x
+
+    # f_x = np.exp(x) / np.sum(np.exp(x))
+    # return f_x
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
