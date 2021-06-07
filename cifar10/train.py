@@ -95,7 +95,7 @@ if __name__ == '__main__':
     parser.add_argument("-uag", "--uncertainty_attention_grad", action='store_true')
 
     # arg for wd
-    parser.add_argument("-wd", "--weight_decay", type=float, default=5e-4)
+    parser.add_argument("-wd", "--weight_decay", type=float, default=1e-4)
     parser.add_argument("-wds", "--weight_decay_schedule", action='store_true')
 
     # arg for gpu
@@ -136,12 +136,6 @@ if __name__ == '__main__':
     def lr_decay(step):
         epoch = step // (args.sample_number // batch_size)
         # print(f'step:{step}, epoch:{epoch}, num_samples:{num_samples}, batch size:{batch_size}')
-        # if epoch < 150:
-        #     return 1.0
-        # elif epoch >= 150 and epoch < 250:
-        #     return 0.1
-        # else:
-        #     return 0.01
         if epoch < 150:
             return 1.0
         elif epoch >= 150 and epoch < 250:
