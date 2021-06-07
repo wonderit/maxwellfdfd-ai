@@ -58,7 +58,7 @@ def softmax(x):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="ce")
-    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.01)
+    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
@@ -355,7 +355,8 @@ if __name__ == '__main__':
 
             # Lr scheduler
 
-            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+            # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 80], gamma=0.5)
             # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
             # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
             # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
