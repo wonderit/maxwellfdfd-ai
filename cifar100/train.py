@@ -289,7 +289,7 @@ if __name__ == '__main__':
             if args.model_type == 'resnet':
                 model = ResNet18(num_class=100).to(device)
             else:
-                model = DenseNet121().to(device)
+                model = DenseNet121(num_class=100).to(device)
             # if device.type == 'cuda':
             #     model = torch.nn.DataParallel(model)
 
@@ -300,7 +300,7 @@ if __name__ == '__main__':
                 if args.model_type == 'resnet':
                     prev_model = ResNet18(num_class=100).to(device)
                 else:
-                    prev_model = DenseNet121().to(device)
+                    prev_model = DenseNet121(num_class=100).to(device)
                 prev_model.load_state_dict(torch.load(prev_model_path))
                 prev_model.eval()
 
@@ -539,7 +539,7 @@ if __name__ == '__main__':
                 if args.model_type == 'resnet':
                     prev_model = ResNet18(num_class=100).to(device)
                 else:
-                    prev_model = DenseNet121().to(device)
+                    prev_model = DenseNet121(num_class=100).to(device)
                 prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu, args.server_num)))
                 prev_model.eval()
                 # if args.pseudo_label:
