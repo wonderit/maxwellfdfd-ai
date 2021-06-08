@@ -13,16 +13,6 @@ from networks import *
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
-# Set deterministic random seed
-random_seed = 999
-torch.manual_seed(random_seed)
-torch.cuda.manual_seed(random_seed)
-torch.cuda.manual_seed_all(random_seed)  # if use multi-GPU
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-np.random.seed(random_seed)
-random.seed(random_seed)
-
 def scatter_plot(y_true, y_pred, message, result_path, iter_number, model_number):
     result = np.column_stack((y_true,y_pred))
 
@@ -57,6 +47,16 @@ def softmax(x):
     # f_x = np.exp(x) / np.sum(np.exp(x))
     # return f_x
 
+# def lr_decay(step):
+#     epoch = step // (args.sample_number // batch_size)
+#     # print(f'step:{step}, epoch:{epoch}, num_samples:{num_samples}, batch size:{batch_size}')
+#     if epoch < 150:
+#         return 1.0
+#     elif epoch >= 150 and epoch < 250:
+#         return 0.1
+#     else:
+#         return 0.01
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="ce")
@@ -82,10 +82,6 @@ if __name__ == '__main__':
     # arg for KD
     parser.add_argument("-rm", "--remember_model", action='store_true')
     parser.add_argument("-w", "--weight", action='store_true')
-    parser.add_argument("-tor", "--teacher_outlier_rejection", action='store_true')
-    parser.add_argument("-tbr", "--teacher_bounded_regression", action='store_true')
-    parser.add_argument("-tbra", "--tbr_addition", action='store_true')
-    parser.add_argument("-z", "--z_score", type=float, default=2.0)
     parser.add_argument("-pl", "--pseudo_label", action='store_true')
     # arg for rpo type
     parser.add_argument("-rt", "--rpo_type", help="Select rpo type.. (max_diff, min_diff, random)", default='max_ce')
@@ -108,6 +104,7 @@ if __name__ == '__main__':
     # arg for gpu
     parser.add_argument("-g", "--gpu", help="set gpu num", type=int, default=0)
     parser.add_argument("-sn", "--server_num", help="set server_num", type=int, default=0)
+    parser.add_argument("-rs", "--random_seed", help="set server_num", type=int, default=999)
 
     args = parser.parse_args()
 
@@ -122,6 +119,16 @@ if __name__ == '__main__':
         print('Memory Usage:')
         print('Allocated:', round(torch.cuda.memory_allocated(GPU_NUM) / 1024 ** 3, 1), 'GB')
         print('Cached:   ', round(torch.cuda.memory_cached(GPU_NUM) / 1024 ** 3, 1), 'GB')
+
+    # Set deterministic random seed
+    random_seed = args.random_seed
+    torch.manual_seed(random_seed)
+    torch.cuda.manual_seed(random_seed)
+    torch.cuda.manual_seed_all(random_seed)  # if use multi-GPU
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(random_seed)
+    random.seed(random_seed)
 
     # TEST
     # args.unit_test = True
@@ -154,8 +161,6 @@ if __name__ == '__main__':
                   args.iteration, args.sample_number))
 
     print('Data Loading... Train dataset Start.')
-
-    # reshape dataset
 
     # Image preprocessing modules
     transform = transforms.Compose([
@@ -196,7 +201,7 @@ if __name__ == '__main__':
 
 
     # create loss log folder
-    al_type = f'al_g{args.gpu}_s{args.server_num}'
+    al_type = f'al_g{args.gpu}_s{args.server_num}_rs{random_seed}'
     if args.is_active_random:
         al_type = al_type + '_random'
 
@@ -215,15 +220,6 @@ if __name__ == '__main__':
 
     if args.weight_decay_schedule:
         al_type = al_type + '_wds'
-
-    if args.teacher_outlier_rejection:
-        al_type = al_type + '_tor_z{}_lambda{}'.format(args.z_score, args.loss_lambda)
-
-    if args.teacher_bounded_regression:
-        tbr_type = 'upper_bound'
-        if args.tbr_addition:
-            tbr_type = 'addition'
-        al_type = al_type + '_tbr_{}_lambda{}'.format(tbr_type, args.loss_lambda)
 
     if args.uncertainty_attention:
         if args.uncertainty_attention_activation == 'sigmoid':
