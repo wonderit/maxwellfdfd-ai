@@ -422,10 +422,10 @@ if __name__ == '__main__':
             # Test the model
             model.eval()
             acc = 0
+            correct = 0
+            total = 0
             with torch.no_grad():
-                correct = 0
-                total = 0
-                for images, labels in test_loader:
+                for (images, labels) in test_loader:
                     images = images.to(device)
                     labels = labels.to(device)
                     outputs = model(images)
