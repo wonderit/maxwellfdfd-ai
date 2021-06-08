@@ -1,5 +1,5 @@
-# import sys
-# sys.path.append('/Users/wonderit/projects/koreauniv/maxwellfdfd-ai')
+import sys
+sys.path.append('D:\\2.CEM\\maxwellfdfd-ai')
 import numpy as np
 import argparse
 import os
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="ce")
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
     parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
-    parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=64)
+    parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
     # arg for testing parameters
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
