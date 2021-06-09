@@ -354,6 +354,8 @@ if __name__ == '__main__':
             criterion = nn.CrossEntropyLoss()
             for epoch in range(num_epochs):
                 model.train()
+                if prev_model is not None:
+                    prev_model.eval()
                 train_loss = 0
                 count = 0
                 for i, (images, labels) in enumerate(train_loader):
@@ -363,14 +365,37 @@ if __name__ == '__main__':
                     # Forward pass
                     outputs = model(images)
 
-                    if args.uncertainty_attention and uncertainty_attention is not None:
-                       # uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
-                        ua_end = batch_size * i + batch_size
-                        ua_start = batch_size * i
-                        if ua_end < len(uncertainty_attention):
-                            batch_ua = uncertainty_attention[ua_start:ua_end]
+                    if args.uncertainty_attention and iter_i > 0:
+                        predict_from_model = prev_model(images)
+                        np_pred = predict_from_model.cpu().data.numpy()
+                        entropy_pred = entropy(softmax(np_pred))
+                        rpo_ua_array_average = np.array(entropy_pred)
+
+                        if args.uncertainty_attention_activation == 'sigmoid':
+                            batch_ua = 1/(1 + np.exp(-args.sigmoid_beta * rpo_ua_array_average))
+                        elif args.uncertainty_attention_activation == 'std_sigmoid':
+                            std_ua = (rpo_ua_array_average - np.mean(rpo_ua_array_average)) / np.std(rpo_ua_array_average)
+                            batch_ua = 1/(1 + np.exp(-args.sigmoid_beta * std_ua))
+                        elif args.uncertainty_attention_activation == 'minmax':
+                            minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
+                                    np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
+                            )
+                            batch_ua = minmax_ua
+                        elif args.uncertainty_attention_activation == 'minmax_tanh':
+                            minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
+                                    np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
+                            )
+                            batch_ua = np.tanh(minmax_ua)
+                        elif args.uncertainty_attention_activation == 'std_tanh':
+                            std_ua = (rpo_ua_array_average - np.mean(rpo_ua_array_average)) / np.std(rpo_ua_array_average)
+                            batch_ua = np.tanh(std_ua)
+                        elif args.uncertainty_attention_activation == 'tanh':
+                            batch_ua = np.tanh(rpo_ua_array_average)
+                        elif args.uncertainty_attention_activation == 'softplus':
+                            batch_ua = np.log1p(np.exp(rpo_ua_array_average))
                         else:
-                            batch_ua = uncertainty_attention[ua_start:]
+                            batch_ua = rpo_ua_array_average
+
                         batch_ua_torch = torch.from_numpy(batch_ua).to(device)
                         batch_ua_torch.requires_grad = uncertainty_attention_grad
 
@@ -545,7 +570,7 @@ if __name__ == '__main__':
         # add uncertainty attention
         if args.uncertainty_attention:
             print('load model and calculate uncertainty for attention model')
-            X_pr_L = []
+            # X_pr_L = []
             for ua_i in range(num_models):
                 # prev_model = ConvNet(num_classes).to(device)
                 if args.model_type == 'resnet':
@@ -553,73 +578,85 @@ if __name__ == '__main__':
                 else:
                     prev_model = DenseNet121().to(device)
                 prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu, args.server_num)))
-                prev_model.eval()
-                # if args.pseudo_label:
-                #     ua_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
-                # else:
-                #     ua_set = MaxwellFDFDDataset(L_x, L_y, transform=False)
-                # Data loader
-                ua_loader = torch.utils.data.DataLoader(dataset=labeled_set,
-                                                            batch_size=batch_size,
-                                                            shuffle=False)
-                prev_model.eval()
-                with torch.no_grad():
-                    X_pr_L_ua = []
-                    for (active_images, active_labels) in ua_loader:
-                        torch_L_x_image = active_images.to(device)
-                        predict_from_model = prev_model(torch_L_x_image)
 
-                        np_pred = predict_from_model.cpu().data.numpy()
-                        X_pr_L_ua.extend(np_pred)
-                    X_pr_L_ua = np.array(X_pr_L_ua)
-                    X_pr_L.extend(X_pr_L_ua)
-            X_pr_L = np.array(X_pr_L)
-            rpo_array_l = []
-            # Ascending order Sorted
-            for i in range(X_pr_L.shape[0]):
-                softmax_pr_l = softmax(X_pr_L[i])
-                rpo_array_l.append(entropy(softmax_pr_l))
-
-            rpo_ua_array_average = np.array(rpo_array_l)
-
-            if args.uncertainty_attention_activation == 'sigmoid':
-                uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * rpo_ua_array_average))
-            elif args.uncertainty_attention_activation == 'std_sigmoid':
-                std_ua = (rpo_ua_array_average - np.mean(rpo_ua_array_average)) / np.std(rpo_ua_array_average)
-                uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * std_ua))
-            elif args.uncertainty_attention_activation == 'minmax':
-                minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
-                        np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
-                )
-                uncertainty_attention = minmax_ua
-            elif args.uncertainty_attention_activation == 'minmax_tanh':
-                minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
-                        np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
-                )
-                uncertainty_attention = np.tanh(minmax_ua)
-            elif args.uncertainty_attention_activation == 'std_tanh':
-                std_ua = (rpo_ua_array_average - np.mean(rpo_ua_array_average)) / np.std(rpo_ua_array_average)
-                uncertainty_attention = np.tanh(std_ua)
-            elif args.uncertainty_attention_activation == 'tanh':
-                uncertainty_attention = np.tanh(rpo_ua_array_average)
-            elif args.uncertainty_attention_activation == 'softplus':
-                uncertainty_attention = np.log1p(np.exp(rpo_ua_array_average))
-            else:
-                uncertainty_attention = rpo_ua_array_average
-
-            # boxplot logging
-            uas.append(rpo_ua_array_average)
-            uas_uaa.append(uncertainty_attention)
-            ua_prev_plot_path = '{}/ua_boxplot_it{}.png'.format(torch_ua_log_folder, iter_i)
-            ua_after_activation_plot_path = '{}/ua_{}_boxplot_it{}.png'.format(torch_ua_log_folder, args.uncertainty_attention_activation, iter_i)
-
-            green_diamond = dict(markerfacecolor='r', marker='s')
-            plt.close()
-            plt.boxplot(uas, flierprops=green_diamond)
-            plt.title("box plot ua")
-            plt.savefig(ua_prev_plot_path, dpi=300)
-
-            plt.close()
-            plt.boxplot(uas_uaa, flierprops=green_diamond)
-            plt.title("box plot ua activation: {}".format(args.uncertainty_attention_activation))
-            plt.savefig(ua_after_activation_plot_path, dpi=300)
+        # # add uncertainty attention
+        # if args.uncertainty_attention:
+        #     print('load model and calculate uncertainty for attention model')
+        #     X_pr_L = []
+        #     for ua_i in range(num_models):
+        #         # prev_model = ConvNet(num_classes).to(device)
+        #         if args.model_type == 'resnet':
+        #             prev_model = ResNet18().to(device)
+        #         else:
+        #             prev_model = DenseNet121().to(device)
+        #         prev_model.load_state_dict(torch.load(prev_models_path.format(ua_i, args.gpu, args.server_num)))
+        #         prev_model.eval()
+        #         # if args.pseudo_label:
+        #         #     ua_set = MaxwellFDFDDataset(PL_x, PL_y, transform=False)
+        #         # else:
+        #         #     ua_set = MaxwellFDFDDataset(L_x, L_y, transform=False)
+        #         # Data loader
+        #         ua_loader = torch.utils.data.DataLoader(dataset=labeled_set,
+        #                                                     batch_size=batch_size,
+        #                                                     shuffle=False)
+        #         prev_model.eval()
+        #         with torch.no_grad():
+        #             X_pr_L_ua = []
+        #             for (active_images, active_labels) in ua_loader:
+        #                 torch_L_x_image = active_images.to(device)
+        #                 predict_from_model = prev_model(torch_L_x_image)
+        #
+        #                 np_pred = predict_from_model.cpu().data.numpy()
+        #                 X_pr_L_ua.extend(np_pred)
+        #             X_pr_L_ua = np.array(X_pr_L_ua)
+        #             X_pr_L.extend(X_pr_L_ua)
+        #     X_pr_L = np.array(X_pr_L)
+        #     rpo_array_l = []
+        #     # Ascending order Sorted
+        #     for i in range(X_pr_L.shape[0]):
+        #         softmax_pr_l = softmax(X_pr_L[i])
+        #         rpo_array_l.append(entropy(softmax_pr_l))
+        #
+        #     rpo_ua_array_average = np.array(rpo_array_l)
+        #
+        #     if args.uncertainty_attention_activation == 'sigmoid':
+        #         uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * rpo_ua_array_average))
+        #     elif args.uncertainty_attention_activation == 'std_sigmoid':
+        #         std_ua = (rpo_ua_array_average - np.mean(rpo_ua_array_average)) / np.std(rpo_ua_array_average)
+        #         uncertainty_attention = 1/(1 + np.exp(-args.sigmoid_beta * std_ua))
+        #     elif args.uncertainty_attention_activation == 'minmax':
+        #         minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
+        #                 np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
+        #         )
+        #         uncertainty_attention = minmax_ua
+        #     elif args.uncertainty_attention_activation == 'minmax_tanh':
+        #         minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
+        #                 np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
+        #         )
+        #         uncertainty_attention = np.tanh(minmax_ua)
+        #     elif args.uncertainty_attention_activation == 'std_tanh':
+        #         std_ua = (rpo_ua_array_average - np.mean(rpo_ua_array_average)) / np.std(rpo_ua_array_average)
+        #         uncertainty_attention = np.tanh(std_ua)
+        #     elif args.uncertainty_attention_activation == 'tanh':
+        #         uncertainty_attention = np.tanh(rpo_ua_array_average)
+        #     elif args.uncertainty_attention_activation == 'softplus':
+        #         uncertainty_attention = np.log1p(np.exp(rpo_ua_array_average))
+        #     else:
+        #         uncertainty_attention = rpo_ua_array_average
+        #
+        #     # boxplot logging
+        #     uas.append(rpo_ua_array_average)
+        #     uas_uaa.append(uncertainty_attention)
+        #     ua_prev_plot_path = '{}/ua_boxplot_it{}.png'.format(torch_ua_log_folder, iter_i)
+        #     ua_after_activation_plot_path = '{}/ua_{}_boxplot_it{}.png'.format(torch_ua_log_folder, args.uncertainty_attention_activation, iter_i)
+        #
+        #     green_diamond = dict(markerfacecolor='r', marker='s')
+        #     plt.close()
+        #     plt.boxplot(uas, flierprops=green_diamond)
+        #     plt.title("box plot ua")
+        #     plt.savefig(ua_prev_plot_path, dpi=300)
+        #
+        #     plt.close()
+        #     plt.boxplot(uas_uaa, flierprops=green_diamond)
+        #     plt.title("box plot ua activation: {}".format(args.uncertainty_attention_activation))
+        #     plt.savefig(ua_after_activation_plot_path, dpi=300)
