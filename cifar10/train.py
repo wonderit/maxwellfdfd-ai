@@ -105,7 +105,7 @@ if __name__ == '__main__':
     parser.add_argument("-g", "--gpu", help="set gpu num", type=int, default=0)
     parser.add_argument("-sn", "--server_num", help="set server_num", type=int, default=0)
     parser.add_argument("-rs", "--random_seed", help="set server_num", type=int, default=999)
-    parser.add_argument("-eh", "--epoch_hl", help="set epoch hl", type=int, default=60)
+    parser.add_argument("-eh", "--epoch_hl", help="set epoch hl", type=int, default=120)
 
     args = parser.parse_args()
 
@@ -363,8 +363,8 @@ if __name__ == '__main__':
             # Lr scheduler
 
             # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
-            # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 80], gamma=0.5)
-            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80])
+            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 80], gamma=0.5)
+            # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80])
             # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[160])
             # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
             # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
