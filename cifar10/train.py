@@ -96,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument("-uag", "--uncertainty_attention_grad", action='store_true')
 
     # arg for wd
-    parser.add_argument("-wd", "--weight_decay", type=float, default=5e-4)
+    parser.add_argument("-wd", "--weight_decay", type=float, default=1e-4)
     parser.add_argument("-wds", "--weight_decay_schedule", action='store_true')
 
     # arg for gpu
