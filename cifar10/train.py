@@ -544,16 +544,6 @@ if __name__ == '__main__':
             active_unlabeled_set = torch.utils.data.Subset(unlabeled_set, U_indices)
             labeled_set = torch.utils.data.ConcatDataset([labeled_set, active_labeled_set])
             unlabeled_set = active_unlabeled_set
-            if args.pseudo_label:
-                pseudo_labeled_set =
-                X_pr_avg = np.average(X_pr, axis=0)
-                X_pr_avg_U = X_pr_avg[U_indices]
-                PL_x = np.append(L_x, U_x, axis=0)
-                PL_y = np.append(L_y, X_pr_avg_U, axis = 0)
-                # shuffle Pseudo Labeled data
-                shuffle_index = np.random.permutation(len(PL_x))
-                PL_x = PL_x[shuffle_index]
-                PL_y = PL_y[shuffle_index]
 
         # shuffle Labeled data
         shuffle_index = np.random.permutation(len(labeled_set))
