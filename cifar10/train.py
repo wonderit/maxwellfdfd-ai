@@ -155,6 +155,7 @@ if __name__ == '__main__':
         args.loss_function = 'l1'
         args.sample_number = 50
 
+    SUBSET = args.sample_number * 10
 
     print('Training model args : batch_size={}, max_epoch={}, lr={}, loss_function={}, al={}, iter={}, K={}'
           .format(args.batch_size, args.max_epoch, args.learning_rate, args.loss_function, args.is_active_learning,
@@ -484,8 +485,10 @@ if __name__ == '__main__':
 
             # AL start
             if not args.is_active_random and args.is_active_learning:
+                random.shuffle(unlabeled_set)
+                unlabeled_subset = unlabeled_set[:SUBSET]
                 # Data loader
-                active_loader = torch.utils.data.DataLoader(dataset=unlabeled_set,
+                active_loader = torch.utils.data.DataLoader(dataset=unlabeled_subset,
                                                             batch_size=batch_size,
                                                             shuffle=False)
                 model.eval()
