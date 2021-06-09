@@ -74,6 +74,7 @@ if __name__ == '__main__':
     parser.add_argument("-a", "--is_active_learning", help="Set is AL", action='store_true')
     parser.add_argument("-ar", "--is_active_random", help="Set is AL random set", action='store_true')
     parser.add_argument("-k", "--sample_number", help="Set K", type=int, default=500)
+    parser.add_argument("-s", "--subset_number", help="Set SUBSET", type=int, default=10000)
     parser.add_argument("-ll", "--loss_lambda", help="set loss lambda", type=float, default=0.5)
     parser.add_argument("-rtl", "--rpo_type_lambda", help="max random data ratio", type=float, default=0.5)
 
@@ -144,8 +145,6 @@ if __name__ == '__main__':
     if args.uncertainty_attention_grad:
         uncertainty_attention_grad = True
 
-
-
     if args.unit_test:
         args.debug = True
         args.max_epoch = 1
@@ -154,8 +153,6 @@ if __name__ == '__main__':
         args.uncertainty_attention = True
         args.loss_function = 'l1'
         args.sample_number = 50
-
-    SUBSET = args.sample_number * 10
 
     print('Training model args : batch_size={}, max_epoch={}, lr={}, loss_function={}, al={}, iter={}, K={}'
           .format(args.batch_size, args.max_epoch, args.learning_rate, args.loss_function, args.is_active_learning,
@@ -497,7 +494,7 @@ if __name__ == '__main__':
             # AL start
             if not args.is_active_random and args.is_active_learning:
                 subset_perm = np.random.permutation(len(unlabeled_set))
-                subset_indices = subset_perm[:SUBSET]
+                subset_indices = subset_perm[:args.subset_number]
 
                 print(f'unlabeled set length: {len(unlabeled_set)}')
 
