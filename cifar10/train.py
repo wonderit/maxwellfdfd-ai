@@ -4,7 +4,6 @@ import argparse
 import os
 import pandas as pd
 from scipy.stats import entropy
-from pytorchtools import EarlyStopping
 import random
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
@@ -59,15 +58,15 @@ def softmax(x):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="ce")
-    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.001)
-    parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=10)
+    parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.1)
+    parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=200)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
     # arg for testing parameters
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
 
-    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
+    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='sgd')
     parser.add_argument("-bn", "--is_batch_norm", help="Set is_batch_norm", action='store_true')
     # arg for AL
     parser.add_argument("-it", "--iteration", help="Set iteration for AL", type=int, default=1)
@@ -97,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument("-uag", "--uncertainty_attention_grad", action='store_true')
 
     # arg for wd
-    parser.add_argument("-wd", "--weight_decay", type=float, default=1e-4)
+    parser.add_argument("-wd", "--weight_decay", type=float, default=5e-4)
     parser.add_argument("-wds", "--weight_decay_schedule", action='store_true')
 
     # arg for gpu
@@ -270,6 +269,8 @@ if __name__ == '__main__':
     uas = []
     uas_uaa = []
     uncertainty_attention = None
+    if args.pseudo_label:
+        pseudo_labeled_set = None
     for iter_i in range(ITERATION):
         print('Training Iteration : {}, Labeled dataset size : {}'.format(iter_i + 1, len(labeled_set)))
         X_pr = []
@@ -280,10 +281,15 @@ if __name__ == '__main__':
         # Data loader
         train_loader = torch.utils.data.DataLoader(dataset=labeled_set,
                                                    batch_size=batch_size,
-                                                   shuffle=True)
+                                                   shuffle=False)
         test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                                  batch_size=100,
+                                                  batch_size=batch_size,
                                                   shuffle=False)
+
+        if iter_i > 0 and args.pseudo_label:
+            train_loader = torch.utils.data.DataLoader(dataset=pseudo_labeled_set,
+                                                       batch_size=batch_size,
+                                                       shuffle=False)
 
         # Train model
         total_step = len(train_loader)
@@ -342,7 +348,8 @@ if __name__ == '__main__':
             # Lr scheduler
 
             # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
-            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 80], gamma=0.5)
+            # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 80], gamma=0.5)
+            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[160])
             # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
             # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
             # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
@@ -537,10 +544,22 @@ if __name__ == '__main__':
             active_unlabeled_set = torch.utils.data.Subset(unlabeled_set, U_indices)
             labeled_set = torch.utils.data.ConcatDataset([labeled_set, active_labeled_set])
             unlabeled_set = active_unlabeled_set
+            if args.pseudo_label:
+                pseudo_labeled_set =
+                X_pr_avg = np.average(X_pr, axis=0)
+                X_pr_avg_U = X_pr_avg[U_indices]
+                PL_x = np.append(L_x, U_x, axis=0)
+                PL_y = np.append(L_y, X_pr_avg_U, axis = 0)
+                # shuffle Pseudo Labeled data
+                shuffle_index = np.random.permutation(len(PL_x))
+                PL_x = PL_x[shuffle_index]
+                PL_y = PL_y[shuffle_index]
 
         # shuffle Labeled data
         shuffle_index = np.random.permutation(len(labeled_set))
         labeled_set = torch.utils.data.Subset(labeled_set, shuffle_index)
+
+        # Pseudo-labeled set
 
         # add uncertainty attention
         if args.uncertainty_attention:

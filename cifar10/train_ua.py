@@ -371,6 +371,8 @@ if __name__ == '__main__':
                         entropy_pred = entropy(softmax(np_pred))
                         rpo_ua_array_average = np.array(entropy_pred)
 
+                        print('np, en,rpo', np_pred.shape, entropy_pred.shape, rpo_ua_array_average.shape)
+
                         if args.uncertainty_attention_activation == 'sigmoid':
                             batch_ua = 1/(1 + np.exp(-args.sigmoid_beta * rpo_ua_array_average))
                         elif args.uncertainty_attention_activation == 'std_sigmoid':
@@ -413,6 +415,7 @@ if __name__ == '__main__':
                         elif args.uncertainty_attention_type == 'lambda_residual':
                             log_softmax = torch.nn.LogSoftmax(dim=1)
                             x_log = log_softmax(outputs)
+                            print(x_log.shape, outputs.shape, labels.shape, batch_ua_torch.shape)
                             loss = (-x_log[range(labels.shape[0]), labels] * (1. + args.uncertainty_attention_lambda * batch_ua_torch)).mean()
                         elif args.uncertainty_attention_type == 'lambda_residual_minus':
                             log_softmax = torch.nn.LogSoftmax(dim=1)
