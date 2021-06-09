@@ -271,7 +271,18 @@ if __name__ == '__main__':
     uas_uaa = []
     uncertainty_attention = None
     if args.pseudo_label:
-        pseudo_labeled_set = None
+        pseudo_labeled_set = None shuffled_indices = np.random.permutation(n_row)
+        labeled_set_size = args.sample_number
+
+        if args.is_active_random:
+            labeled_set_size = labeled_set_size * args.iteration
+
+        # random_row = random.sample(list(range(n_row)), random_n_row)
+        L_indices = shuffled_indices[:labeled_set_size]
+        U_indices = shuffled_indices[labeled_set_size:]
+
+        labeled_set = torch.utils.data.Subset(train_dataset, L_indices)
+        unlabeled_set = torch.utils.data.Subset(train_dataset, U_indices)
     for iter_i in range(ITERATION):
         print('Training Iteration : {}, Labeled dataset size : {}'.format(iter_i + 1, len(labeled_set)))
         X_pr = []
@@ -485,8 +496,12 @@ if __name__ == '__main__':
 
             # AL start
             if not args.is_active_random and args.is_active_learning:
-                random.shuffle(unlabeled_set)
-                unlabeled_subset = unlabeled_set[:SUBSET]
+                subset_perm = np.random.permutation(len(unlabeled_set))
+                subset_indices = subset_perm[:SUBSET]
+
+                print(f'unlabeled set length: {len(unlabeled_set)}')
+
+                unlabeled_subset = torch.utils.data.Subset(unlabeled_set, subset_indices)
                 # Data loader
                 active_loader = torch.utils.data.DataLoader(dataset=unlabeled_subset,
                                                             batch_size=batch_size,
