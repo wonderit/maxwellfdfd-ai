@@ -60,7 +60,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--loss_function", help="Select loss functions.. (rmse,diff_rmse,diff_ce)", default="ce")
     parser.add_argument("-lr", "--learning_rate", help="Set learning_rate", type=float, default=0.1)
-    parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=50)
+    parser.add_argument("-e", "--max_epoch", help="Set max epoch", type=int, default=200)
     parser.add_argument("-b", "--batch_size", help="Set batch size", type=int, default=128)
 
     # arg for testing parameters
@@ -365,8 +365,8 @@ if __name__ == '__main__':
             # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
             # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 80], gamma=0.5)
             # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80])
-            # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[160])
-            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[25, 35])
+            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[160])
+            # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[25, 35])
             # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
             # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
             # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.1,
