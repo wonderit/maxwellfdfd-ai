@@ -386,7 +386,6 @@ if __name__ == '__main__':
                     outputs = model(images)
 
                     if args.uncertainty_attention and uncertainty_attention is not None and epoch < args.epoch_hl:
-                        print(f'ua confirmed. epoch : {epoch}')
                        # uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
                         ua_end = batch_size * i + batch_size
                         ua_start = batch_size * i
