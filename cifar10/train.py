@@ -67,7 +67,7 @@ if __name__ == '__main__':
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
 
-    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adamw')
+    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='sgd')
     parser.add_argument("-bn", "--is_batch_norm", help="Set is_batch_norm", action='store_true')
     # arg for AL
     parser.add_argument("-it", "--iteration", help="Set iteration for AL", type=int, default=1)
