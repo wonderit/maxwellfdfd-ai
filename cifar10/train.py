@@ -364,8 +364,8 @@ if __name__ == '__main__':
 
             # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
             # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 80], gamma=0.5)
-            # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80])
-            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[160])
+            # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[160])
+            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, 150])
             # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[25, 35])
             # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_decay, last_epoch=-1)
             # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
