@@ -75,7 +75,7 @@ if __name__ == '__main__':
     parser.add_argument("-a", "--is_active_learning", help="Set is AL", action='store_true')
     parser.add_argument("-ar", "--is_active_random", help="Set is AL random set", action='store_true')
     parser.add_argument("-k", "--sample_number", help="Set K", type=int, default=500)
-    parser.add_argument("-s", "--subset_number", help="Set SUBSET", type=int, default=2500)
+    parser.add_argument("-s", "--subset_number", help="Set SUBSET", type=int, default=10000)
     parser.add_argument("-ll", "--loss_lambda", help="set loss lambda", type=float, default=0.5)
     parser.add_argument("-rtl", "--rpo_type_lambda", help="max random data ratio", type=float, default=0.5)
 
