@@ -240,8 +240,8 @@ if __name__ == '__main__':
         else:
             al_type = al_type + '_ua{}_{}'.format(args.uncertainty_attention_type, args.uncertainty_attention_activation)
 
-    log_folder = 'torch/{}_{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
-        al_type, args.loss_function, args.optimizer, args.model_type, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
+    log_folder = 'torch/{}_{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}_s{}'.format(
+        al_type, args.loss_function, args.optimizer, args.model_type, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number, args.subset_number
     )
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
