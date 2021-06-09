@@ -105,6 +105,7 @@ if __name__ == '__main__':
     parser.add_argument("-g", "--gpu", help="set gpu num", type=int, default=0)
     parser.add_argument("-sn", "--server_num", help="set server_num", type=int, default=0)
     parser.add_argument("-rs", "--random_seed", help="set server_num", type=int, default=999)
+    parser.add_argument("-eh", "--epoch_hl", help="set epoch hl", type=int, default=60)
 
     args = parser.parse_args()
 
@@ -384,7 +385,8 @@ if __name__ == '__main__':
                     # Forward pass
                     outputs = model(images)
 
-                    if args.uncertainty_attention and uncertainty_attention is not None:
+                    if args.uncertainty_attention and uncertainty_attention is not None and epoch < args.epoch_hl:
+                        print(f'ua confirmed. epoch : {epoch}')
                        # uncertainty_attention_resize = np.array(num_classes * [uncertainty_attention]).T
                         ua_end = batch_size * i + batch_size
                         ua_start = batch_size * i
