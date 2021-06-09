@@ -66,7 +66,7 @@ if __name__ == '__main__':
     parser.add_argument("-u", "--unit_test", help="flag for testing source code", action='store_true')
     parser.add_argument("-d", "--debug", help="flag for debugging", action='store_true')
 
-    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adam')
+    parser.add_argument("-o", "--optimizer", help="Select optimizer.. (sgd, adam, adamw)", default='adamw')
     parser.add_argument("-bn", "--is_batch_norm", help="Set is_batch_norm", action='store_true')
     # arg for AL
     parser.add_argument("-it", "--iteration", help="Set iteration for AL", type=int, default=1)
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument("-uag", "--uncertainty_attention_grad", action='store_true')
 
     # arg for wd
-    parser.add_argument("-wd", "--weight_decay", type=float, default=1e-4)
+    parser.add_argument("-wd", "--weight_decay", type=float, default=0.01)
     parser.add_argument("-wds", "--weight_decay_schedule", action='store_true')
 
     # arg for gpu
