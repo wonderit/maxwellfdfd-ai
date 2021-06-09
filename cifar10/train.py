@@ -3,6 +3,7 @@ import numpy as np
 import argparse
 import os
 import pandas as pd
+import torch.utils.data
 from scipy.stats import entropy
 import random
 from torchvision import datasets, transforms
@@ -292,6 +293,21 @@ if __name__ == '__main__':
         # Train model
         total_step = len(train_loader)
 
+        # set active loader
+        if not args.is_active_random and args.is_active_learning:
+            subset_perm = np.random.permutation(len(unlabeled_set))
+            subset_indices = subset_perm[:args.subset_number]
+            indices_for_labeled_set = subset_perm[args.subset_number:]
+
+            print(f'unlabeled set length: {len(unlabeled_set)}')
+
+            unlabeled_subset = torch.utils.data.Subset(unlabeled_set, subset_indices)
+            unlabeled_subset_for_label = torch.utils.data.Subset(unlabeled_set, indices_for_labeled_set)
+            # Data loader
+            active_loader = torch.utils.data.DataLoader(dataset=unlabeled_subset,
+                                                        batch_size=batch_size,
+                                                        shuffle=False)
+
 
         # active regressor
         for m in range(num_models):
@@ -482,16 +498,6 @@ if __name__ == '__main__':
 
             # AL start
             if not args.is_active_random and args.is_active_learning:
-                subset_perm = np.random.permutation(len(unlabeled_set))
-                subset_indices = subset_perm[:args.subset_number]
-
-                print(f'unlabeled set length: {len(unlabeled_set)}')
-
-                unlabeled_subset = torch.utils.data.Subset(unlabeled_set, subset_indices)
-                # Data loader
-                active_loader = torch.utils.data.DataLoader(dataset=unlabeled_subset,
-                                                            batch_size=batch_size,
-                                                            shuffle=False)
                 model.eval()
                 with torch.no_grad():
                     correct = 0
@@ -544,14 +550,22 @@ if __name__ == '__main__':
                 U_indices = rpo_array_arg_sort[:U_length]
                 L_indices = rpo_array_arg_sort[U_length:]
 
-            active_labeled_set = torch.utils.data.Subset(unlabeled_set, L_indices)
-            active_unlabeled_set = torch.utils.data.Subset(unlabeled_set, U_indices)
+            active_labeled_set = torch.utils.data.Subset(unlabeled_subset, L_indices)
+            active_unlabeled_set = torch.utils.data.Subset(unlabeled_subset, U_indices)
+
+            # active_labeled_set = torch.utils.data.Subset(unlabeled_set, L_indices)
+            # active_unlabeled_set = torch.utils.data.Subset(unlabeled_set, U_indices)
             labeled_set = torch.utils.data.ConcatDataset([labeled_set, active_labeled_set])
-            unlabeled_set = active_unlabeled_set
+            unlabeled_set = torch.utils.data.ConcatDataset([active_unlabeled_set, unlabeled_subset_for_label])
+            # unlabeled_set = active_unlabeled_set
 
         # shuffle Labeled data
         shuffle_index = np.random.permutation(len(labeled_set))
         labeled_set = torch.utils.data.Subset(labeled_set, shuffle_index)
+
+        # shuffle unlabeled data
+        shuffle_index = np.random.permutation(len(unlabeled_set))
+        unlabeled_set = torch.utils.data.Subset(unlabeled_set, shuffle_index)
 
         # Pseudo-labeled set
 
