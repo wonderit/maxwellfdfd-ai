@@ -23,16 +23,6 @@ from torch.utils.data import DataLoader
 # batch_size = 128
 # learning_rate = 0.001
 
-# Set deterministic random seed
-random_seed = 999
-torch.manual_seed(random_seed)
-torch.cuda.manual_seed(random_seed)
-torch.cuda.manual_seed_all(random_seed) # if use multi-GPU
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-np.random.seed(random_seed)
-random.seed(random_seed)
-
 def scatter_plot(y_true, y_pred, message, result_path, iter_number, model_number):
     result = np.column_stack((y_true,y_pred))
 
@@ -113,6 +103,7 @@ if __name__ == '__main__':
     # arg for gpu
     parser.add_argument("-g", "--gpu", help="set gpu num", type=int, default=0)
     parser.add_argument("-sn", "--server_num", help="set server_num", type=int, default=0)
+    parser.add_argument("-rs", "--random_seed", help="set server_num", type=int, default=999)
 
     args = parser.parse_args()
 
@@ -149,6 +140,15 @@ if __name__ == '__main__':
 
     img_rows, img_cols, channels = 100, 200, 1
 
+    # Set deterministic random seed
+    random_seed = args.random_seed
+    torch.manual_seed(random_seed)
+    torch.cuda.manual_seed(random_seed)
+    torch.cuda.manual_seed_all(random_seed)  # if use multi-GPU
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(random_seed)
+    random.seed(random_seed)
 
     def lr_decay(step):
         epoch = step // (args.sample_number // batch_size)
