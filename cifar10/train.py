@@ -620,7 +620,7 @@ if __name__ == '__main__':
             elif args.uncertainty_attention_activation == 'minmax':
                 minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (
                         np.max(rpo_ua_array_average) - np.min(rpo_ua_array_average)
-                )
+                )-sb
                 uncertainty_attention = minmax_ua
             elif args.uncertainty_attention_activation == 'minmax_tanh':
                 minmax_ua = (rpo_ua_array_average - np.min(rpo_ua_array_average)) / (

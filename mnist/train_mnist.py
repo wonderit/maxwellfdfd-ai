@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
     # Hyper parameters
     # num_epochs = 10
-    num_classes = 24
+    num_classes = 10
     # batch_size = 128
     # learning_rate = 0.001
 
