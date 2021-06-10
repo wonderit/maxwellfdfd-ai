@@ -51,12 +51,28 @@ MODEL_ARRAY = [
         'path': 'torch/max_ce'
     },
 
+    # {
+    #     'color': 'r',
+    #     'name': 'ua_max_ce',
+    #     'path': 'torch/ua_max_ce'
+    # },
+
     {
         'color': 'r',
         'name': 'ua_max_ce',
-        'path': 'torch/ua_max_ce'
+        'path': 'torch/ua_max_ce_lambda1'
     },
-
+    # {
+    #     'color': 'lightgray',
+    #     'name': 'random_w',
+    #     'path': 'torch/al_g1_s5_rm_nobn_weight_ce_adam_resnet_random0.5_wd0.0001_b128_e100_lr0.001_it10_K1000/txt'
+    # },
+    #
+    # {
+    #     'color': 'lightblue',
+    #     'name': 'max_ce_w',
+    #     'path': 'torch/al_g1_s2_rm_nobn_weight_ce_adam_resnet_max_ce0.5_wd0.0001_b128_e100_lr0.001_it10_K1000/txt'
+    # },
     # {
     #     'color': 'm',
     #     'name': 'ua_b10_max',
@@ -94,15 +110,10 @@ result = pd.DataFrame()
 # gca stands for 'get current axis'
 ax = plt.gca()
 
-k = 1000
-result['x'] = list(range(k, 10 * k + 1, k))
+k = 200
+result['x'] = list(range(k, 5 * k + 1, k))
 
 cmap = plt.cm.get_cmap("hsv", len(MODEL_ARRAY)+1)
-
-# ll = [47.54666667,	59.04333333,	65.13666667,	69.75,	74.63333333,	76.33333333,	79.59333333,	81.61333333,	83.15666667,	83.73]
-ll = [31.57333333,	38.82,	44.29666667	,48.01,	51.32333333	,54.35,	56.68333333	,58.69333333,	60.12666667	,61.12333333]
-
-
 for i, model_info in enumerate(MODEL_ARRAY):
     model_results = search(model_info['path'])
     df_results = parse_result(model_results)
@@ -110,11 +121,9 @@ for i, model_info in enumerate(MODEL_ARRAY):
 
     result.plot(kind='line', use_index=True, x='x', y=model_info['name'], color=model_info['color'], ax=ax)
 
-result['ll'] = ll
-result.plot(kind='line', use_index=True, x='x', y='ll', color='gray', ax=ax)
 plt.xlabel('Number of labeled images')
 plt.ylabel('Accuracy')
 
 plt.xticks(result['x'])
 
-plt.savefig('result-cifar10-mean2.png', dpi=300)
+plt.savefig('result-mnist-k200-new.png', dpi=300)

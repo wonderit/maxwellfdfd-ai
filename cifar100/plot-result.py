@@ -56,17 +56,17 @@ MODEL_ARRAY = [
         'name': 'ua_max_ce_0.1',
         'path': 'torch/al_g0_s7_rs999_nobn_ualambda_residual_sb1.0_ual0.1_ce_adam_resnet_max_ce0.5_wd0.0001_b128_e100_lr0.001_it10_K1000/txt'
     },
-    {
-        'color': 'orange',
-        'name': 'ua_max_ce_0.5',
-        'path': 'torch/al_g0_s7_rs999_nobn_ualambda_residual_sb1.0_ual0.5_ce_adam_resnet_max_ce0.5_wd0.0001_b128_e100_lr0.001_it10_K1000/txt'
-    },
-
-    {
-        'color': 'pink',
-        'name': 'ua_max_ce_0.9',
-        'path': 'torch/al_g0_s7_rs999_nobn_ualambda_residual_sb1.0_ual0.9_ce_adam_resnet_max_ce0.5_wd0.0001_b128_e100_lr0.001_it10_K1000/txt'
-    },
+    # {
+    #     'color': 'orange',
+    #     'name': 'ua_max_ce_0.5',
+    #     'path': 'torch/al_g0_s7_rs999_nobn_ualambda_residual_sb1.0_ual0.5_ce_adam_resnet_max_ce0.5_wd0.0001_b128_e100_lr0.001_it10_K1000/txt'
+    # },
+    #
+    # {
+    #     'color': 'pink',
+    #     'name': 'ua_max_ce_0.9',
+    #     'path': 'torch/al_g0_s7_rs999_nobn_ualambda_residual_sb1.0_ual0.9_ce_adam_resnet_max_ce0.5_wd0.0001_b128_e100_lr0.001_it10_K1000/txt'
+    # },
     # {
     #     'color': 'm',
     #     'name': 'ua_b10_max',
@@ -120,4 +120,4 @@ plt.ylabel('Accuracy')
 
 plt.xticks(result['x'])
 
-plt.savefig('result-cifar100.png', dpi=300)
+plt.savefig('result-cifar100-1.png', dpi=300)

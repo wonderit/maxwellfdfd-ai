@@ -117,4 +117,4 @@ plt.ylabel('Accuracy')
 
 plt.xticks(result['x'])
 
-plt.savefig('result-cifar10-mean2.png', dpi=300)
+plt.savefig('result-cifar10-mean-k250.png', dpi=300)

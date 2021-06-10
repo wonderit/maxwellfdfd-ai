@@ -232,7 +232,7 @@ if __name__ == '__main__':
         al_type = al_type + '_wds'
 
     if args.uncertainty_attention:
-        if args.uncertainty_attention_activation == 'sigmoid':
+        if args.uncertainty_attention_activation == 'sigmoid' or args.uncertainty_attention_activation == 'std_sigmoid':
             al_type = al_type + f'_ua{args.uncertainty_attention_type}_sb{args.sigmoid_beta}'
             if args.uncertainty_attention_type == 'lambda_residual':
                 al_type = al_type + f'_ual{args.uncertainty_attention_lambda}'
