@@ -273,7 +273,7 @@ if __name__ == '__main__':
             return out
 
     # create loss log folder
-    al_type = f'al_g{args.gpu}_s{args.server_num}'
+    al_type = f'al_g{args.gpu}_s{args.server_num}_rs{random_seed}'
     if args.is_active_random:
         al_type = al_type + '_random'
 
