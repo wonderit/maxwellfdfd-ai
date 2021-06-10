@@ -81,6 +81,7 @@ if __name__ == '__main__':
     parser.add_argument("-a", "--is_active_learning", help="Set is AL", action='store_true')
     parser.add_argument("-ar", "--is_active_random", help="Set is AL random set", action='store_true')
     parser.add_argument("-k", "--sample_number", help="Set K", type=int, default=500)
+    parser.add_argument("-s", "--subset_number", help="Set SUBSET", type=int, default=10000)
     parser.add_argument("-ll", "--loss_lambda", help="set loss lambda", type=float, default=0.5)
     parser.add_argument("-rtl", "--rpo_type_lambda", help="max random data ratio", type=float, default=0.5)
 
@@ -311,8 +312,8 @@ if __name__ == '__main__':
         else:
             al_type = al_type + '_ua{}_{}'.format(args.uncertainty_attention_type, args.uncertainty_attention_activation)
 
-    log_folder = 'torch/{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}'.format(
-        al_type, args.loss_function, args.optimizer, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number
+    log_folder = 'torch/{}_{}_{}_{}{}_wd{}_b{}_e{}_lr{}_it{}_K{}_s{}'.format(
+        al_type, args.loss_function, args.optimizer, args.rpo_type, args.rpo_type_lambda, args.weight_decay, batch_size, num_epochs, learning_rate, args.iteration, args.sample_number, args.subset_number
     )
 
     torch_loss_folder = '{}/train_progress'.format(log_folder)
@@ -356,6 +357,21 @@ if __name__ == '__main__':
 
         # Train model
         total_step = len(train_loader)
+
+        # set active loader
+        if not args.is_active_random and args.is_active_learning:
+            subset_perm = np.random.permutation(len(unlabeled_set))
+            subset_indices = subset_perm[:args.subset_number]
+            indices_for_labeled_set = subset_perm[args.subset_number:]
+
+            print(f'unlabeled set length: {len(unlabeled_set)}')
+
+            unlabeled_subset = torch.utils.data.Subset(unlabeled_set, subset_indices)
+            unlabeled_subset_for_label = torch.utils.data.Subset(unlabeled_set, indices_for_labeled_set)
+            # Data loader
+            active_loader = torch.utils.data.DataLoader(dataset=unlabeled_subset,
+                                                        batch_size=batch_size,
+                                                        shuffle=False)
 
 
         # active regressor
@@ -518,10 +534,6 @@ if __name__ == '__main__':
 
             # AL start
             if not args.is_active_random and args.is_active_learning:
-                # Data loader
-                active_loader = torch.utils.data.DataLoader(dataset=unlabeled_set,
-                                                            batch_size=batch_size,
-                                                            shuffle=False)
                 model.eval()
                 with torch.no_grad():
                     correct = 0
@@ -576,12 +588,17 @@ if __name__ == '__main__':
 
             active_labeled_set = torch.utils.data.Subset(unlabeled_set, L_indices)
             active_unlabeled_set = torch.utils.data.Subset(unlabeled_set, U_indices)
+
             labeled_set = torch.utils.data.ConcatDataset([labeled_set, active_labeled_set])
-            unlabeled_set = active_unlabeled_set
+            unlabeled_set = torch.utils.data.ConcatDataset([active_unlabeled_set, unlabeled_subset_for_label])
 
         # shuffle Labeled data
         shuffle_index = np.random.permutation(len(labeled_set))
         labeled_set = torch.utils.data.Subset(labeled_set, shuffle_index)
+
+        # shuffle unlabeled data
+        shuffle_index = np.random.permutation(len(unlabeled_set))
+        unlabeled_set = torch.utils.data.Subset(unlabeled_set, shuffle_index)
 
         # add uncertainty attention
         if args.uncertainty_attention:
