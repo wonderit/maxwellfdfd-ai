@@ -16,9 +16,9 @@
 
     >   download and unzip models of the paper
     >
-    >   [models_paper.zip](https://drive.google.com/uc?id=1lvexOJmZ8zGHecwOwAGBoEjxRj9YXBO4)
+    >   [models_paper.zip](https://drive.google.com/uc?id=1wdf5UbkW4lV4RYQtMbKLmokN85PREIQI)
     >
-    >   [models_paper_mean_std.zip](https://drive.google.com/uc?id=13ySFQd77kpqrBS61HuaK-YA9fs8hOSJH)
+    >   [models_paper_mean_std.zip](https://drive.google.com/uc?id=1It14qQhnawW7sXSwAZ94CMIYcgHp80SW)
 
 
 # Conda Setting
